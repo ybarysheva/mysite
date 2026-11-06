@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Your Name</title>
+  <meta name="description" content="Product designer. Also: art, writing, and small things I've built.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='4' y='4' width='24' height='24' fill='white' stroke='black' stroke-width='3'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!--
+    Each <article class="card"> is one draggable box.
+    Content order here = reading order for keyboard / screen readers.
+    Positions are shuffled fresh on every page load.
+  -->
+  <main id="desk" class="desk">
+
+    <!-- ABOUT -->
+    <article class="card card--about" data-card="about">
+      <header class="card__bar"><h2>about</h2><span class="grip" aria-hidden="true"></span></header>
+      <div class="card__body">
+        <h1 class="name">Your Name</h1>
+        <p>Placeholder bio. A sentence or two about who you are, where you're based, and what you care about.</p>
+        <ul class="links">
+          <li><a href="mailto:hello@example.com">email</a></li>
+          <li><a href="https://open.spotify.com/" target="_blank" rel="noopener">spotify</a></li>
+        </ul>
+      </div>
+    </article>
+
+    <!-- WORK -->
+    <article class="card card--work" data-card="work">
+      <header class="card__bar"><h2>work</h2><span class="grip" aria-hidden="true"></span></header>
+      <div class="card__body">
+        <p class="big">product design</p>
+        <p>Placeholder line about the kind of design work you do and what you're good at.</p>
+        <ul class="links">
+          <li><a href="https://example.com/portfolio" target="_blank" rel="noopener">portfolio</a></li>
+          <li><a href="https://www.linkedin.com/" target="_blank" rel="noopener">linkedin</a></li>
+        </ul>
+      </div>
+    </article>
+
+    <!-- CURRENTLY: starts out stuck to the corner of the work card -->
+    <article class="card card--currently" data-card="currently" data-near="work">
+      <header class="card__bar"><h2>currently</h2><span class="grip" aria-hidden="true"></span></header>
+      <div class="card__body">
+        <p>[role] @ [company]</p>
+      </div>
+    </article>
+
+    <!-- PROJECTS (name TBD) -->
+    <article class="card card--projects" data-card="projects">
+      <header class="card__bar"><h2>side projects</h2><span class="grip" aria-hidden="true"></span></header>
+      <div class="card__body">
+        <ul class="projects">
+          <li>
+            <a href="https://example.com/send-cat" target="_blank" rel="noopener">
+              <span class="thumb" aria-hidden="true"></span>
+              <span><span class="pname">send cat</span><span class="pdesc">[one line about send cat]</span></span>
+              <span class="arrow" aria-hidden="true">→</span>
+            </a>
+          </li>
+          <li>
+            <a href="https://example.com/supermarket" target="_blank" rel="noopener">
+              <span class="thumb" aria-hidden="true"></span>
+              <span><span class="pname">supermarket</span><span class="pdesc">[one line about supermarket]</span></span>
+              <span class="arrow" aria-hidden="true">→</span>
+            </a>
+          </li>
+          <li>
+            <a href="https://example.com/bass" target="_blank" rel="noopener">
+              <span class="thumb" aria-hidden="true"></span>
+              <span><span class="pname">bass</span><span class="pdesc">[one line about bass]</span></span>
+              <span class="arrow" aria-hidden="true">→</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </article>
+
+    <!-- WRITING: lined-paper card -->
+    <article class="card card--writing" data-card="writing">
+      <header class="card__bar"><h2>writing</h2><span class="grip" aria-hidden="true"></span></header>
+      <div class="card__body">
+        <p>Placeholder intro to your writing: what you write about, how often, and why someone might want to read it.<span class="caret" aria-hidden="true"></span></p>
+        <ul class="links">
+          <li><a href="https://substack.com/" target="_blank" rel="noopener">substack</a></li>
+        </ul>
+      </div>
+    </article>
+
+    <!-- ART: images scattered inside the box, each one draggable -->
+    <article class="card card--art" data-card="art">
+      <header class="card__bar"><h2>art</h2><span class="grip" aria-hidden="true"></span></header>
+      <div class="card__body">
+        <div class="art__pile">
+          <!-- Swap each placeholder <span class="ph"> for <img src="..." alt="..."> -->
+          <figure class="art__img" style="--iw:120px;--ih:150px"><span class="ph"></span><figcaption>img_01</figcaption></figure>
+          <figure class="art__img" style="--iw:150px;--ih:110px"><span class="ph"></span><figcaption>img_02</figcaption></figure>
+          <figure class="art__img" style="--iw:110px;--ih:110px"><span class="ph"></span><figcaption>img_03</figcaption></figure>
+          <figure class="art__img" style="--iw:125px;--ih:165px"><span class="ph"></span><figcaption>img_04</figcaption></figure>
+          <figure class="art__img" style="--iw:160px;--ih:120px"><span class="ph"></span><figcaption>img_05</figcaption></figure>
+        </div>
+        <ul class="links">
+          <li><a href="https://www.instagram.com/" target="_blank" rel="noopener">instagram</a></li>
+        </ul>
+      </div>
+    </article>
+
+  </main>
+
+  <p class="hint" aria-hidden="true">
+    <span class="hint--mouse">drag things around</span>
+    <span class="hint--touch">drag cards by their top bar</span>
+  </p>
+
+  <script src="script.js" defer></script>
+</body>
+</html>
