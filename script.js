@@ -2,7 +2,7 @@
   const desk = document.getElementById("desk");
   if (!desk) return;
 
-  let cards = []; // filled in at init (the chat card may remove itself first)
+  const cards = [...desk.querySelectorAll(".card")];
   const piles = [...desk.querySelectorAll(".art__pile")];
   const hint = document.querySelector(".hint");
 
@@ -144,7 +144,7 @@
   function makeDraggable(el, { touchHandle, bounds, onFront, onMoveStart }) {
     el.addEventListener("pointerdown", (e) => {
       if (e.button !== 0) return;
-      if (e.target.closest("a, button, input, textarea, select, label, .chat__thread")) return;
+      if (e.target.closest("a, button")) return;
       // On touch, cards only drag from their top bar so the page can still scroll.
       if (e.pointerType !== "mouse" && touchHandle && !e.target.closest(touchHandle)) return;
 
@@ -189,7 +189,7 @@
     if (hint) hint.classList.add("is-gone");
   }
 
-  function wireCard(card) {
+  cards.forEach((card) => {
     makeDraggable(card, {
       touchHandle: ".card__bar",
       onFront: () => toFront(card),
@@ -205,12 +205,6 @@
     });
     // keyboard users: bring a card forward when tabbing into it
     card.addEventListener("focusin", () => toFront(card));
-  }
-
-  // a new chat reply pops the chat card to the front
-  desk.addEventListener("chat:new", (e) => {
-    const card = e.target.closest(".card");
-    if (card) toFront(card);
   });
 
   piles.forEach((pile) => {
@@ -258,8 +252,6 @@
   desk.classList.add("is-live");
 
   const init = () => {
-    cards = [...desk.querySelectorAll(".card")];
-    cards.forEach(wireCard);
     piles.forEach(scatterArt);
     scatter();
 
@@ -321,10 +313,9 @@
   // Refresh every minute while the tab is visible.
   setInterval(() => document.visibilityState === "visible" && loadListening(), 60000);
 
-  // Wait for the font, and briefly for the song + chat check, so card sizes
-  // are measured correctly before laying out.
+  // Wait for the font (and briefly for the song) so card sizes are measured
+  // correctly before laying out.
   const fontsReady = document.fonts ? document.fonts.ready : Promise.resolve();
   const songOrTimeout = Promise.race([loadListening(), new Promise((r) => setTimeout(r, 1200))]);
-  const chatChecked = window.chatReady || Promise.resolve();
-  Promise.all([fontsReady, songOrTimeout, chatChecked.catch(() => {})]).then(init, init);
+  Promise.all([fontsReady, songOrTimeout]).then(init, init);
 })();
