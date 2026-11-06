@@ -100,6 +100,34 @@
       </div>
     </article>
 
+    <!-- SAY HI: live chat. Yana answers from /inbox on her phone.
+         Removes itself if the chat backend isn't set up. Logic in chat.js. -->
+    <article class="card card--chat" data-card="chat">
+      <header class="card__bar"><h2>say hi</h2><span class="grip" aria-hidden="true"></span></header>
+      <div class="card__body">
+        <p class="chat__status"><span class="chat__dot" aria-hidden="true"></span><span class="chat__status-text">away right now</span></p>
+        <div class="chat__thread" role="log" aria-live="polite" aria-label="conversation"></div>
+        <p class="chat__error" role="alert" hidden></p>
+        <form class="chat__form" autocomplete="off">
+          <label class="visually-hidden" for="chat-input">your message</label>
+          <input class="chat__input" id="chat-input" name="text" maxlength="1000" placeholder="type here" enterkeyhint="send">
+          <button type="submit">send</button>
+          <input class="chat__hp" name="website" tabindex="-1" aria-hidden="true">
+        </form>
+        <div class="chat__email" hidden>
+          <button type="button" class="chat__email-toggle">leave your email too?</button>
+          <form class="chat__email-form" hidden>
+            <label for="chat-email">want a reply by email? (optional)</label>
+            <div class="chat__row">
+              <input class="chat__email-input" id="chat-email" type="email" maxlength="200" placeholder="you@email.com" autocomplete="email">
+              <button type="submit">save</button>
+            </div>
+          </form>
+        </div>
+        <p class="chat__email-saved" hidden>got it, I'll write back there too.</p>
+      </div>
+    </article>
+
     <!-- ART: images scattered inside the box, each one draggable -->
     <article class="card card--art" data-card="art">
       <header class="card__bar"><h2>art</h2><span class="grip" aria-hidden="true"></span></header>
@@ -125,6 +153,7 @@
     <span class="hint--touch">drag cards by their top bar</span>
   </p>
 
+  <script src="chat.js" defer></script>
   <script src="script.js" defer></script>
 </body>
 </html>

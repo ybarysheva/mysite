@@ -73,6 +73,7 @@ p:last-child { margin-bottom: 0; }
 .card--projects   { --w: 330px; }
 .card--writing    { --w: 310px; }
 .card--art        { --w: 380px; }
+.card--chat       { --w: 320px; }
 
 .desk.is-live .card {
   position: absolute;
@@ -374,3 +375,107 @@ body.is-grabbing, body.is-grabbing * { cursor: grabbing !important; }
 @media (prefers-reduced-motion: reduce) {
   .eq i { animation: none; transform: scaleY(.6); }
 }
+
+/* ---------- say hi (chat) ---------- */
+.visually-hidden,
+.chat__hp {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.chat__status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 10px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.chat__dot {
+  width: 7px;
+  height: 7px;
+  border: 1px solid var(--ink);
+  border-radius: 50%;
+}
+.chat__status.is-around .chat__dot { background: var(--ink); }
+
+.chat__thread {
+  max-height: 220px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  margin: 0 -14px;
+  padding: 8px 14px;
+  border-top: 1px dashed var(--rule);
+  border-bottom: 1px dashed var(--rule);
+  cursor: auto;
+}
+.chat__msg {
+  display: grid;
+  grid-template-columns: 4.5ch 1fr;
+  gap: 8px;
+  padding: 3px 0;
+  line-height: 1.5;
+}
+.chat__who { color: var(--muted); }
+.chat__msg--yana .chat__text { font-weight: 700; }
+.chat__text { white-space: pre-wrap; overflow-wrap: anywhere; }
+.chat__msg.is-pending .chat__text { color: var(--muted); }
+
+.chat__error {
+  margin: 8px 0 0;
+  font-size: 12px;
+}
+
+.chat__form,
+.chat__row {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+.card--chat input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: 16px; /* 16px stops iPhones zooming in on focus */
+  padding: 5px 8px;
+  color: var(--ink);
+  background: var(--card);
+  border: 1px solid var(--ink);
+  border-radius: 0;
+}
+@media (min-width: 641px) {
+  .card--chat input { font-size: 13px; }
+}
+.card--chat input::placeholder { color: var(--muted); }
+.card--chat button {
+  font: inherit;
+  font-size: 12px;
+  padding: 5px 10px;
+  color: var(--ink);
+  background: var(--card);
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  cursor: pointer;
+}
+.card--chat button:hover {
+  background: var(--ink);
+  color: var(--card);
+}
+.card--chat .chat__email-toggle {
+  margin-top: 10px;
+  padding: 0;
+  border: 0;
+  font-size: 12px;
+  color: var(--muted);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.card--chat .chat__email-toggle:hover { background: none; color: var(--ink); }
+.chat__email-form { margin-top: 12px; }
+.chat__email-form label { font-size: 12px; color: var(--muted); }
+.chat__email-form .chat__row { margin-top: 4px; }
+.chat__email-saved { margin: 10px 0 0; font-size: 12px; color: var(--muted); }

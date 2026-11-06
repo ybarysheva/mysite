@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <title>inbox</title>
+  <link rel="manifest" href="/inbox/manifest.webmanifest">
+  <link rel="icon" href="/inbox/icon-192.png">
+  <link rel="apple-touch-icon" href="/inbox/icon-180.png">
+  <meta name="apple-mobile-web-app-title" content="inbox">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#f5f5f2" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#111111" media="(prefers-color-scheme: dark)">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/inbox/inbox.css">
+</head>
+<body>
+  <header class="top">
+    <h1>inbox</h1>
+    <button type="button" id="status" class="pill" hidden aria-pressed="false">away</button>
+  </header>
+
+  <main>
+    <!-- not configured / errors -->
+    <p id="problem" class="problem" hidden></p>
+
+    <!-- login -->
+    <section id="login" hidden>
+      <form id="login-form" class="stack">
+        <label for="password">password</label>
+        <input id="password" type="password" autocomplete="current-password" required>
+        <button type="submit">log in</button>
+        <p class="err" id="login-err" hidden></p>
+      </form>
+    </section>
+
+    <!-- notifications setup -->
+    <section id="notify" class="notify" hidden>
+      <p id="notify-text"></p>
+      <button type="button" id="notify-btn" hidden>turn on notifications</button>
+    </section>
+
+    <!-- conversation list -->
+    <section id="list" hidden>
+      <ul id="convs" class="convs"></ul>
+      <p id="empty" class="muted" hidden>no messages yet.</p>
+    </section>
+
+    <!-- one conversation -->
+    <section id="thread" hidden>
+      <button type="button" id="back" class="link">← all messages</button>
+      <div class="meta">
+        <p id="t-started" class="muted"></p>
+        <p id="t-email" hidden>
+          <span class="muted">email:</span> <span id="t-email-addr"></span>
+          <a id="t-mailto" class="pill" href="#">reply by email</a>
+        </p>
+        <p id="t-blocked" class="muted" hidden>blocked: their new messages don't reach you.</p>
+      </div>
+      <div id="msgs" class="msgs" role="log" aria-live="polite"></div>
+      <form id="reply-form" class="reply">
+        <label for="reply" class="visually-hidden">reply</label>
+        <textarea id="reply" rows="2" placeholder="reply…" maxlength="1000" required></textarea>
+        <button type="submit">send</button>
+      </form>
+      <p class="err" id="reply-err" hidden></p>
+      <div class="actions">
+        <button type="button" id="block" class="link">block</button>
+        <button type="button" id="delete" class="link">delete conversation</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="/inbox/inbox.js" defer></script>
+</body>
+</html>
