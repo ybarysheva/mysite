@@ -44,58 +44,57 @@
     card.style.zIndex = ++z;
   }
 
+  /* How far a card's stuck-on note (e.g. "currently" on work) pokes out
+     above and to the right of the card. Layout treats card + note as one box. */
+  function overhang(card) {
+    const note = card.querySelector(".note");
+    if (!note) return { top: 0, right: 0 };
+    return {
+      top: Math.max(0, -note.offsetTop),
+      right: Math.max(0, note.offsetLeft + note.offsetWidth - card.clientWidth),
+    };
+  }
+
   /* ---------- layout: curated random ----------
      Cards land randomly, but each one tries a bunch of spots and keeps one
      that only overlaps others a little. The about card is never covered and
-     always lands in the first screenful. Cards with data-near="x" start out
-     stuck to the top-right corner of card x. */
+     always lands in the first screenful. */
   function scatter() {
     const W = desk.clientWidth;
     const VH = window.innerHeight;
-    const sizes = new Map(cards.map((c) => [c, { w: c.offsetWidth, h: c.offsetHeight }]));
-    const totalArea = [...sizes.values()].reduce((s, v) => s + v.w * v.h, 0);
+    const boxes = new Map(
+      cards.map((c) => {
+        const o = overhang(c);
+        return [c, { w: c.offsetWidth + o.right, h: c.offsetHeight + o.top, top: o.top }];
+      })
+    );
+    const totalArea = [...boxes.values()].reduce((s, v) => s + v.w * v.h, 0);
 
     const about = cards.find((c) => c.dataset.card === "about");
-    const attached = cards.filter((c) => c.dataset.near);
-    const free = shuffled(cards.filter((c) => c !== about && !c.dataset.near));
+    const order = [about, ...shuffled(cards.filter((c) => c !== about))].filter(Boolean);
 
-    if (W < 640) return scatterColumn(sizes, about, free, attached);
+    if (W < 640) return scatterColumn(boxes, order);
 
     const H = Math.max(VH, Math.ceil(totalArea / (W * 0.55)) + BOTTOM);
     desk.style.height = H + "px";
     const overlapAllowed = 0.15;
-    const order = [about, ...free, ...attached].filter(Boolean);
     const rects = new Map();
 
     for (const card of order) {
-      const s = sizes.get(card);
+      const s = boxes.get(card);
       const maxX = W - s.w - PAD;
       const maxY = H - s.h - BOTTOM;
-      const anchorEl = card.dataset.near && desk.querySelector(`[data-card="${card.dataset.near}"]`);
-      const anchor = anchorEl && rects.get(anchorEl);
 
       let best = null;
       let bestScore = Infinity;
 
       for (let i = 0; i < 120; i++) {
-        let x, y;
-        if (anchor) {
-          x = anchor.x + anchor.w - s.w * rand(0.35, 0.6);
-          y = anchor.y - s.h * rand(0.35, 0.6);
-        } else if (card === about) {
-          x = rand(PAD, maxX);
-          y = rand(PAD, Math.min(maxY, VH * 0.45));
-        } else {
-          x = rand(PAD, maxX);
-          y = rand(PAD, maxY);
-        }
-        x = clamp(x, PAD, maxX);
-        y = clamp(y, PAD, maxY);
+        const x = clamp(rand(PAD, maxX), PAD, maxX);
+        const y = clamp(card === about ? rand(PAD, Math.min(maxY, VH * 0.45)) : rand(PAD, maxY), PAD, maxY);
 
         const r = { x, y, w: s.w, h: s.h };
         let score = 0;
         for (const [other, o] of rects) {
-          if (other === anchorEl) continue; // overlapping your anchor is the point
           const allowance = other === about ? 0 : overlapAllowed * Math.min(r.w * r.h, o.w * o.h);
           score += Math.max(0, overlapArea(r, o) - allowance);
         }
@@ -107,31 +106,23 @@
       }
 
       rects.set(card, best);
-      place(card, best.x, best.y);
+      place(card, best.x, best.y + s.top);
     }
 
-    // stacking order: random, but about + attached notes on top
-    shuffled(free).forEach(toFront);
+    // stacking order: random, but about on top
+    shuffled(order).forEach(toFront);
     if (about) toFront(about);
-    attached.forEach(toFront);
   }
 
   /* Phones: a shuffled column with sideways jitter. Each card tucks slightly
      under the next so every top bar (the touch drag handle) stays visible. */
-  function scatterColumn(sizes, about, free, attached) {
+  function scatterColumn(boxes, order) {
     const W = desk.clientWidth;
     let y = PAD + rand(0, 16);
-    for (const card of [about, ...free].filter(Boolean)) {
-      const s = sizes.get(card);
-      place(card, rand(PAD, Math.max(PAD, W - s.w - PAD)), y);
+    for (const card of order) {
+      const s = boxes.get(card);
+      place(card, rand(PAD, Math.max(PAD, W - s.w - PAD)), y + s.top);
       toFront(card);
-
-      // attached notes go on this card's top-right corner
-      for (const note of attached.filter((n) => n.dataset.near === card.dataset.card)) {
-        const n = sizes.get(note);
-        place(note, Math.max(PAD, W - n.w - PAD - rand(0, 12)), Math.max(PAD, y - n.h * 0.4));
-        toFront(note);
-      }
       y += s.h + rand(-10, 28);
     }
     desk.style.height = Math.max(window.innerHeight, y + BOTTOM) + "px";
@@ -177,7 +168,7 @@
           onMoveStart && onMoveStart();
         }
         const b = bounds();
-        place(el, clamp(origin.x + dx, 0, b.maxX), clamp(origin.y + dy, 0, b.maxY));
+        place(el, clamp(origin.x + dx, b.minX || 0, b.maxX), clamp(origin.y + dy, b.minY || 0, b.maxY));
       };
 
       const end = () => {
@@ -203,10 +194,14 @@
       touchHandle: ".card__bar",
       onFront: () => toFront(card),
       onMoveStart: hideHint,
-      bounds: () => ({
-        maxX: desk.clientWidth - card.offsetWidth,
-        maxY: desk.clientHeight - card.offsetHeight,
-      }),
+      bounds: () => {
+        const o = overhang(card);
+        return {
+          minY: o.top,
+          maxX: desk.clientWidth - card.offsetWidth - o.right,
+          maxY: desk.clientHeight - card.offsetHeight,
+        };
+      },
     });
     // keyboard users: bring a card forward when tabbing into it
     card.addEventListener("focusin", () => toFront(card));
@@ -236,7 +231,7 @@
     for (const card of cards) {
       const h = home.get(card);
       if (!h) continue;
-      place(card, clamp(h.x, 0, desk.clientWidth - card.offsetWidth - PAD), h.y, { remember: false });
+      place(card, clamp(h.x, 0, desk.clientWidth - card.offsetWidth - overhang(card).right - PAD), h.y, { remember: false });
     }
     for (const pile of piles) {
       for (const img of pile.querySelectorAll(".art__img")) {

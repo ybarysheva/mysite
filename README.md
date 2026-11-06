@@ -14,8 +14,8 @@ Plain HTML/CSS/JS, no build step.
   `<img src="images/whatever.jpg" alt="description">`. The `--iw` / `--ih`
   values on each `<figure>` set the image's size in the pile.
 - **New card:** copy any `<article class="card">` block and give it a unique `data-card`.
-  Add `data-near="other-card"` to make it start stuck to another card's corner
-  (that's how "currently" sits on "work").
+- **Stuck-on notes:** an `<aside class="note">` inside a card sits on its top-right corner
+  and moves with it (that's how "currently" sits on "work").
 
 ## "Listening now" (Spotify)
 Not set up yet. The about card has a hidden spot for the current/last-played Spotify
