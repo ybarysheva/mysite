@@ -300,3 +300,67 @@ body.is-grabbing, body.is-grabbing * { cursor: grabbing !important; }
   .caret { animation: none; }
   .desk.is-live .card { transition: none; }
 }
+
+/* ---------- listening (about card) ---------- */
+.listening {
+  margin: 12px 0 0;
+  padding: 10px 0 0;
+  border-top: 1px dashed var(--rule);
+}
+.listening[hidden] { display: none; }
+.listening__label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 6px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.listening__track {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  gap: 10px;
+  align-items: center;
+  text-decoration: none;
+}
+.listening__track:hover .listening__title {
+  background: var(--ink);
+  color: var(--card);
+}
+.listening__cover {
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--ink);
+  object-fit: cover;
+  background: repeating-linear-gradient(45deg, var(--rule) 0 1px, transparent 1px 6px);
+}
+.listening__text { min-width: 0; line-height: 1.4; }
+.listening__title,
+.listening__artist {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.listening__title { font-weight: 700; }
+.listening__artist { color: var(--muted); font-size: 12px; }
+
+/* tiny equalizer, only while something is playing */
+.eq { display: none; align-items: flex-end; gap: 1px; height: 9px; }
+.listening.is-live .eq { display: inline-flex; }
+.eq i {
+  width: 2px;
+  height: 100%;
+  background: var(--ink);
+  transform-origin: bottom;
+  animation: eq .9s ease-in-out infinite;
+}
+.eq i:nth-child(2) { animation-delay: -.3s; }
+.eq i:nth-child(3) { animation-delay: -.6s; }
+@keyframes eq {
+  0%, 100% { transform: scaleY(.3); }
+  50% { transform: scaleY(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .eq i { animation: none; transform: scaleY(.6); }
+}

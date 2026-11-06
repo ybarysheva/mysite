@@ -258,6 +258,57 @@
     requestAnimationFrame(() => desk.classList.add("is-ready"));
   };
 
-  // wait for the font so card sizes are measured correctly
-  (document.fonts ? document.fonts.ready : Promise.resolve()).then(init, init);
+  /* ---------- email (assembled only when someone reaches for it) ---------- */
+  document.querySelectorAll(".js-email").forEach((a) => {
+    const reveal = () => {
+      const flip = (s) => [...s].reverse().join("");
+      a.href = "mailto:" + flip(a.dataset.u) + "@" + flip(a.dataset.d);
+    };
+    ["pointerenter", "focus", "click"].forEach((ev) => a.addEventListener(ev, reveal, { once: true }));
+  });
+
+  /* ---------- listening (Last.fm via /api/now-playing) ---------- */
+  const listening = document.querySelector(".listening");
+
+  function timeAgo(ms) {
+    const m = Math.round((Date.now() - ms) / 60000);
+    if (m < 1) return "just now";
+    if (m < 60) return m + "m ago";
+    const h = Math.round(m / 60);
+    if (h < 24) return h + "h ago";
+    return Math.round(h / 24) + "d ago";
+  }
+
+  async function loadListening() {
+    if (!listening) return;
+    try {
+      const res = await fetch("/api/now-playing", { cache: "no-store" });
+      if (!res.ok) return;
+      const { track } = await res.json();
+      if (!track || !track.title) return;
+
+      listening.querySelector(".listening__status").textContent = track.nowPlaying
+        ? "listening now"
+        : "last played" + (track.playedAt ? " · " + timeAgo(track.playedAt) : "");
+      listening.querySelector(".listening__title").textContent = track.title;
+      listening.querySelector(".listening__artist").textContent = track.artist;
+      listening.querySelector(".listening__track").href = track.url;
+      const cover = listening.querySelector(".listening__cover");
+      if (track.image) cover.src = track.image;
+      else cover.removeAttribute("src");
+      listening.classList.toggle("is-live", track.nowPlaying);
+      listening.hidden = false;
+    } catch (_) {
+      /* not deployed / not configured: just leave it hidden */
+    }
+  }
+
+  // Refresh every minute while the tab is visible.
+  setInterval(() => document.visibilityState === "visible" && loadListening(), 60000);
+
+  // Wait for the font (and briefly for the song) so card sizes are measured
+  // correctly before laying out.
+  const fontsReady = document.fonts ? document.fonts.ready : Promise.resolve();
+  const songOrTimeout = Promise.race([loadListening(), new Promise((r) => setTimeout(r, 1200))]);
+  Promise.all([fontsReady, songOrTimeout]).then(init, init);
 })();

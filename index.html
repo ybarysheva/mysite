@@ -25,8 +25,17 @@
       <div class="card__body">
         <h1 class="name">Yana Barysheva</h1>
         <p>Placeholder bio. A sentence or two about who you are, where you're based, and what you care about.</p>
+        <!-- Filled in by script.js from /api/now-playing (Last.fm). Stays hidden if that isn't set up. -->
+        <div class="listening" hidden>
+          <p class="listening__label"><span class="eq" aria-hidden="true"><i></i><i></i><i></i></span><span class="listening__status"></span></p>
+          <a class="listening__track" href="#" target="_blank" rel="noopener">
+            <img class="listening__cover" alt="" width="40" height="40">
+            <span class="listening__text"><span class="listening__title"></span><span class="listening__artist"></span></span>
+          </a>
+        </div>
         <ul class="links">
-          <li><a href="mailto:hello@example.com">email</a></li>
+          <!-- Address is stored reversed and assembled on hover/focus/click to keep scrapers off it -->
+          <li><a class="js-email" href="#" data-u="avehsyrab.y" data-d="moc.liamg">email</a></li>
           <li><a href="https://open.spotify.com/" target="_blank" rel="noopener">spotify</a></li>
         </ul>
       </div>
