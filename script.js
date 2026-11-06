@@ -10,9 +10,9 @@
   const BOTTOM = 40;   // breathing room at the bottom (keeps clear of the hint)
   const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  const pos = new Map();
+  const pos = new Map();   // where each element is drawn right now
+  const home = new Map();  // where it was put (by the shuffle or by a drag)
   let z = 10;
-  let lastWidth = 0;
 
   /* ---------- helpers ---------- */
   const rand = (a, b) => a + Math.random() * (b - a);
@@ -31,12 +31,13 @@
     return w > 0 && h > 0 ? w * h : 0;
   };
 
-  function place(el, x, y) {
+  function place(el, x, y, { remember = true } = {}) {
     x = Math.round(x);
     y = Math.round(y);
     el.style.left = x + "px";
     el.style.top = y + "px";
     pos.set(el, { x, y });
+    if (remember) home.set(el, { x, y });
   }
 
   function toFront(card) {
@@ -228,16 +229,28 @@
     });
   });
 
+  /* Resizing never reshuffles. Everything stays put; a box only slides in if
+     it would otherwise hang off the right edge, and slides back to its spot
+     when there's room again. */
+  function keepInView() {
+    for (const card of cards) {
+      const h = home.get(card);
+      if (!h) continue;
+      place(card, clamp(h.x, 0, desk.clientWidth - card.offsetWidth - PAD), h.y, { remember: false });
+    }
+    for (const pile of piles) {
+      for (const img of pile.querySelectorAll(".art__img")) {
+        const h = home.get(img);
+        if (!h) continue;
+        place(img, clamp(h.x, 0, pile.clientWidth - img.offsetWidth), h.y, { remember: false });
+      }
+    }
+  }
+
   let resizeTimer;
   window.addEventListener("resize", () => {
     clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(() => {
-      const w = desk.clientWidth;
-      if (w === lastWidth) return; // ignore height-only changes (mobile URL bar)
-      lastWidth = w;
-      piles.forEach(scatterArt);
-      scatter();
-    }, 150);
+    resizeTimer = setTimeout(keepInView, 100);
   });
 
   /* ---------- go ---------- */
@@ -246,7 +259,6 @@
   const init = () => {
     piles.forEach(scatterArt);
     scatter();
-    lastWidth = desk.clientWidth;
 
     // fade cards in one by one
     if (!reduceMotion) {
