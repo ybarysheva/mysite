@@ -267,7 +267,7 @@
     ["pointerenter", "focus", "click"].forEach((ev) => a.addEventListener(ev, reveal, { once: true }));
   });
 
-  /* ---------- listening (Last.fm via /api/now-playing) ---------- */
+  /* ---------- listening now (/api/now-playing, Spotify: not set up yet) ---------- */
   const listening = document.querySelector(".listening");
 
   function timeAgo(ms) {
