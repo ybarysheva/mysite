@@ -31,18 +31,16 @@ The about card shows what you're playing on Spotify right now (or the last thing
 It stays hidden until it's set up, and hides itself whenever Spotify doesn't answer.
 Needs Spotify **Premium** (Spotify's rule for developer apps since Feb 2026).
 
-**One-time setup**
-1. developer.spotify.com → Dashboard → **Create app**. Any name; tick **Web API**;
-   Redirect URI: `https://<your-site>/api/spotify-setup` (exactly; the setup page shows it too).
-   Copy the **Client ID** and **Client Secret**. (If Spotify asks, add your own Spotify email
-   under the app's User Management.)
-2. Vercel → Settings → Environment Variables: add `SPOTIFY_CLIENT_ID` and
-   `SPOTIFY_CLIENT_SECRET`, then redeploy.
-3. Open `https://<your-site>/api/spotify-setup` → log in to Spotify → **Agree** → copy the token it shows.
-4. Add it in Vercel as `SPOTIFY_REFRESH_TOKEN`, then redeploy.
-5. Delete `api/spotify-setup.js` (it switches itself off once step 4 is done, but it's only needed once).
+**Status:** connected (Spotify app + `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`,
+`SPOTIFY_REFRESH_TOKEN` in Vercel).
 
-Code: `api/now-playing.js` (what the widget calls), `api/spotify-setup.js` (temporary).
+**If it ever needs redoing** (Premium lapses, access revoked, new Spotify app): restore the
+one-time setup page from git history (`git checkout 6e90606 -- api/spotify-setup.js`), deploy,
+open `https://<your-site>/api/spotify-setup`, log in → Agree, put the new token in Vercel as
+`SPOTIFY_REFRESH_TOKEN`, redeploy, then delete the setup page again. The Spotify app's Redirect
+URI must match that address exactly.
+
+Code: `api/now-playing.js` (what the widget calls).
 Tests: `npm test`.
 
 ## Email

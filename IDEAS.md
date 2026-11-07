@@ -51,20 +51,16 @@ Four bass strings come down over the site and you can play them.
 - Click/tap empty canvas to leave a small stamp there. Only on that visitor's screen; gone on reload.
 - Waiting on: what the stamps should be.
 
-## 4. Spotify "listening now": BUILT, waiting on Yana's setup
-
-- Code is in (`api/now-playing.js`, temporary `api/spotify-setup.js`); direct Spotify API
-  (Last.fm rejected). Hidden on the site until set up.
-- Yana's steps are in the README ("Listening now"). She has Premium (required since Feb 2026).
-- After she's done: delete `api/spotify-setup.js`, and confirm Spotify still serves
-  currently-playing / recently-played to new developer apps (couldn't verify from here).
-
-## 5. Cats I've known + loved
+## 4. Cats I've known + loved
 
 - Not a straightforward card: something hidden/discoverable (e.g. found by double-tapping empty
   space or a tiny cat somewhere).
 
 ---
+
+## Done
+- **Spotify "listening now"**: live on the about card (direct Spotify API; setup page removed;
+  how to redo it is in the README).
 
 ## Dropped (for the record)
 - **Live chat / inbox app**: built, then removed. Yana didn't want to share her Upstash Redis
