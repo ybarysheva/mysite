@@ -461,7 +461,7 @@
   setInterval(renderLocal, 30 * 1000);
   setInterval(() => document.visibilityState === "visible" && loadWeather(), 15 * 60 * 1000);
 
-  /* ---------- listening now (/api/now-playing, Spotify: not set up yet) ---------- */
+  /* ---------- listening now (Spotify, via /api/now-playing; hidden until set up) ---------- */
   const listening = document.querySelector(".listening");
 
   function timeAgo(ms) {

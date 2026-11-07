@@ -27,8 +27,23 @@ canvas size are `HOLD_MS` and `sizeDesk()` in `script.js`.
   and moves with it (that's how "currently" sits on "work").
 
 ## "Listening now" (Spotify)
-Not set up yet. The about card has a hidden spot for the current/last-played Spotify
-track; it stays hidden until there's an `/api/now-playing` endpoint to fill it.
+The about card shows what you're playing on Spotify right now (or the last thing you played).
+It stays hidden until it's set up, and hides itself whenever Spotify doesn't answer.
+Needs Spotify **Premium** (Spotify's rule for developer apps since Feb 2026).
+
+**One-time setup**
+1. developer.spotify.com → Dashboard → **Create app**. Any name; tick **Web API**;
+   Redirect URI: `https://<your-site>/api/spotify-setup` (exactly; the setup page shows it too).
+   Copy the **Client ID** and **Client Secret**. (If Spotify asks, add your own Spotify email
+   under the app's User Management.)
+2. Vercel → Settings → Environment Variables: add `SPOTIFY_CLIENT_ID` and
+   `SPOTIFY_CLIENT_SECRET`, then redeploy.
+3. Open `https://<your-site>/api/spotify-setup` → log in to Spotify → **Agree** → copy the token it shows.
+4. Add it in Vercel as `SPOTIFY_REFRESH_TOKEN`, then redeploy.
+5. Delete `api/spotify-setup.js` (it switches itself off once step 4 is done, but it's only needed once).
+
+Code: `api/now-playing.js` (what the widget calls), `api/spotify-setup.js` (temporary).
+Tests: `npm test`.
 
 ## Email
 The address is stored reversed in `index.html` (`data-u` / `data-d`) and only assembled

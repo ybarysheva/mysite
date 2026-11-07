@@ -51,14 +51,13 @@ Four bass strings come down over the site and you can play them.
 - Click/tap empty canvas to leave a small stamp there. Only on that visitor's screen; gone on reload.
 - Waiting on: what the stamps should be.
 
-## 4. Spotify "listening now"
+## 4. Spotify "listening now": BUILT, waiting on Yana's setup
 
-- The about card already has a hidden spot for it (`.listening`, filled from `/api/now-playing`).
-- Plan: direct Spotify API (**not** Last.fm, rejected) through a Vercel function, plus a one-time script
-  Yana runs on her computer to get a refresh token.
-- Yana's setup when ready: create an app at developer.spotify.com (client ID + secret), run the
-  script to get a refresh token, add `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`,
-  `SPOTIFY_REFRESH_TOKEN` in Vercel.
+- Code is in (`api/now-playing.js`, temporary `api/spotify-setup.js`); direct Spotify API
+  (Last.fm rejected). Hidden on the site until set up.
+- Yana's steps are in the README ("Listening now"). She has Premium (required since Feb 2026).
+- After she's done: delete `api/spotify-setup.js`, and confirm Spotify still serves
+  currently-playing / recently-played to new developer apps (couldn't verify from here).
 
 ## 5. Cats I've known + loved
 
