@@ -14,9 +14,12 @@ const pick = (xml, tag) => {
 };
 const decode = (s) => s.replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">");
 
+// every book on the shelf (newest first, as Goodreads lists them)
 export function parseFeed(xml) {
-  const item = (xml.match(/<item>([\s\S]*?)<\/item>/) || [])[1];
-  if (!item) return null;
+  return [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].map((m) => toBook(m[1])).filter((b) => b.title);
+}
+
+function toBook(item) {
   const id = pick(item, "book_id");
   return {
     title: decode(pick(item, "title")),
@@ -37,12 +40,12 @@ async function findUserId() {
 export async function GET() {
   try {
     const id = await findUserId();
-    if (!id) return json({ book: null, error: "no goodreads user" }, 502, "no-store");
+    if (!id) return json({ books: [], error: "no goodreads user" }, 502, "no-store");
     const res = await fetch(`https://www.goodreads.com/review/list_rss/${id}?shelf=currently-reading`, { headers: { "User-Agent": "Mozilla/5.0" } });
-    if (!res.ok) return json({ book: null, error: `goodreads ${res.status}` }, 502, "no-store");
-    const book = parseFeed(await res.text());
-    return json({ book: book && book.title ? book : null });
+    if (!res.ok) return json({ books: [], error: `goodreads ${res.status}` }, 502, "no-store");
+    const books = parseFeed(await res.text()).slice(0, 6);
+    return json({ books });
   } catch (err) {
-    return json({ book: null, error: String(err.message || err) }, 502, "no-store");
+    return json({ books: [], error: String(err.message || err) }, 502, "no-store");
   }
 }

@@ -739,13 +739,34 @@
     try {
       const res = await fetch("/api/reading");
       if (!res.ok) return;
-      const { book } = await res.json();
-      if (!book || !book.title) return;
-      reading.querySelector(".reading__title").textContent = book.title;
-      reading.querySelector(".reading__author").textContent = book.author || "";
-      reading.querySelector(".listening__track").href = book.url || "#";
-      const cover = reading.querySelector(".reading__cover");
-      if (book.image) cover.src = book.image;
+      const { books } = await res.json();
+      if (!books || !books.length) return;
+      const list = reading.querySelector(".reading__list");
+      list.replaceChildren(...books.map((b) => {
+        const li = document.createElement("li");
+        const a = document.createElement("a");
+        a.className = "listening__track";
+        a.href = b.url || "#";
+        a.target = "_blank";
+        a.rel = "noopener";
+        const img = document.createElement("img");
+        img.className = "listening__cover";
+        img.alt = "";
+        img.width = img.height = 40;
+        if (b.image) img.src = b.image;
+        const text = document.createElement("span");
+        text.className = "listening__text";
+        const t = document.createElement("span");
+        t.className = "listening__title";
+        t.textContent = b.title;
+        const au = document.createElement("span");
+        au.className = "listening__artist";
+        au.textContent = b.author || "";
+        text.append(t, au);
+        a.append(img, text);
+        li.append(a);
+        return li;
+      }));
       reading.hidden = false;
       placeLate(reading);
     } catch (_) {

@@ -18,12 +18,13 @@ globalThis.fetch = async (url) => {
 };
 const { GET, parseFeed } = await import("../api/reading.js");
 
-test("finds the member id from the author page, returns the first book on the shelf", async () => {
+test("finds the member id from the author page, returns every book on the shelf", async () => {
   const body = await (await GET()).json();
-  assert.deepEqual(body.book, { title: "Piranesi", author: "Susanna Clarke", image: "https://i.gr-assets.com/m.jpg", url: "https://www.goodreads.com/book/show/50202953" });
+  assert.equal(body.books.length, 2);
+  assert.deepEqual(body.books[0], { title: "Piranesi", author: "Susanna Clarke", image: "https://i.gr-assets.com/m.jpg", url: "https://www.goodreads.com/book/show/50202953" });
   assert.ok(calls.some((c) => c.includes("shelf=currently-reading")));
 });
 
-test("empty shelf → no book", () => {
-  assert.equal(parseFeed("<rss><channel></channel></rss>"), null);
+test("empty shelf → no books", () => {
+  assert.deepEqual(parseFeed("<rss><channel></channel></rss>"), []);
 });
