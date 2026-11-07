@@ -327,33 +327,21 @@ body.is-grabbing, body.is-grabbing * { cursor: grabbing !important; }
 }
 .pdesc { display: block; } /* same size and color as the rest of the box's text */
 
-/* art pieces */
-.node--art { padding: 6px 6px 0; }
-.node--art .ph,
+/* art pieces: just the image (no frame), with the ↗ beside it at the bottom */
+.node--art {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+}
 .node--art img {
   display: block;
   width: var(--iw);
   height: var(--ih);
-  max-width: 100%;
   object-fit: cover;
   pointer-events: none;
-}
-.node--art .ph {
-  background: repeating-linear-gradient(45deg, var(--rule) 0 1px, transparent 1px 8px);
-  border: 1px solid var(--rule);
-}
-.node--art figcaption {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  max-width: var(--iw);
-  padding: 3px 0 5px;
-}
-.node--art figcaption span {
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
 }
 /* the little ↗ that opens the piece on Instagram */
 .node__out {
