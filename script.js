@@ -17,6 +17,7 @@
 
   const pos = new Map();   // where each box is drawn right now
   const home = new Map();  // where it was put (by the shuffle or by a drag)
+  const heading = new Map(); // which way each cluster's small boxes branch out (radians)
   let z = 10;
 
   /* ---------- helpers ---------- */
@@ -103,6 +104,9 @@
     desk.style.width = isPhone() ? Math.max(viewportWidth() * 2, 760) + "px" : "";
   }
 
+  const byName = (name) => cards.find((c) => c.dataset.card === name);
+  const pairOf = (...names) => names.map(byName).filter(Boolean);
+
   // Smaller screens pack things a bit closer together (1 on a big screen, down to 0.6).
   const roomScale = () => clamp((desk.clientWidth * window.innerHeight) / (1440 * 900), 0.6, 1);
 
@@ -120,8 +124,11 @@
     let best = null, bestScore = Infinity;
     const crowd = kidsOf(parent).length; // bigger families get to spread out further
     const k = roomScale();
+    // all of a cluster's small boxes branch out on one side of its main box
+    const dir = heading.get(parent);
+    const spread = (Math.min(70 + crowd * 14, 130) * Math.PI) / 180;
     for (let i = 0; i < 500; i++) {
-      const t = rand(0, Math.PI * 2);
+      const t = dir === undefined ? rand(0, Math.PI * 2) : dir + rand(-spread / 2, spread / 2);
       const gap = rand(26 * k, (70 + crowd * 35) * k);
       const dist = edge(a.w, a.h, t) + gap + edge(s.w, s.h, t);
       const x = clamp(cx + Math.cos(t) * dist - s.w / 2, PAD, W - s.w - PAD);
@@ -180,50 +187,80 @@
     const H = Math.round(Math.max(VH, Math.ceil(total / (W * 0.42)) + BOTTOM) * roomier);
     desk.style.height = H + "px";
 
-    // room each cluster wants around its main box, based on how much it has to hold
-    const margin = new Map(order.map((c) => {
+    // how much room each cluster's small boxes need (a square patch on one side of the main box)
+    const patch = new Map(order.map((c) => {
       const kidsArea = kidsOf(c).reduce((s, n) => { const o = sizeOf(n); return s + o.w * o.h; }, 0);
-      return [c, clamp(Math.sqrt(kidsArea) * 0.5, 50, 170) * roomScale()];
+      return [c, clamp(Math.sqrt(kidsArea * 2.6), 110, 460) * roomScale()];
     }));
+    const offCanvas = (r) => r.w * r.h - overlapArea(r, { x: 0, y: 0, w: W, h: H });
 
     const placed = [];     // every box placed so far
     const zones = [];      // main boxes + their surrounding room
     const about = order[0];
+
+    /* The composition: about in the middle; work + side projects together on one side,
+       writing + art together on the other (which side, and which is on top, shuffles).
+       Each main box lands near its spot; its small boxes branch outward, never back
+       toward the middle. */
+    const spots = new Map([[about, { sx: 0.5, sy: Math.min(0.42, (VH * 0.42) / H) }]]);
+    const pairs = shuffled([pairOf("work", "projects"), pairOf("writing", "art")]);
+    pairs.forEach((pair, side) => {
+      shuffled(pair).forEach((card, row) => spots.set(card, { sx: side ? 0.83 : 0.17, sy: row ? 0.72 : 0.22 }));
+    });
+    const mid = spots.get(about);
+    const outward = (card) => {
+      const sp = spots.get(card);
+      return Math.atan2((sp.sy - mid.sy) * H, (sp.sx - mid.sx) * W);
+    };
+
     for (const card of order) {
       const s = sizeOf(card);
-      const m = margin.get(card);
+      const S = patch.get(card);
+      const hasKids = kidsOf(card).length > 0;
       const maxX = W - s.w - PAD, maxY = H - s.h - BOTTOM;
+      const sp = spots.get(card) || { sx: rand(0.2, 0.8), sy: rand(0.2, 0.8) };
       let best = null, bestScore = Infinity;
-      for (let i = 0; i < 200; i++) {
-        const x = clamp(card === about ? rand(PAD, Math.min(maxX, VW - s.w - PAD)) : rand(PAD, maxX), PAD, maxX);
-        const y = clamp(card === about ? rand(PAD, Math.min(maxY, VH * 0.4)) : rand(PAD, maxY), PAD, maxY);
-        const zone = { x: x - m, y: y - m, w: s.w + 2 * m, h: s.h + 2 * m };
+      for (let i = 0; i < 400; i++) {
+        const x = clamp(sp.sx * W + rand(-0.09, 0.09) * W - s.w / 2, PAD, maxX);
+        const y = clamp(sp.sy * H + rand(-0.1, 0.1) * H - s.h / 2, PAD, maxY);
+        const dir = (Math.floor(rand(0, 8)) * Math.PI) / 4; // one of 8 directions
+        // branches point away from the middle (about's own can go any way but up)
+        if (card === about ? Math.sin(dir) < -0.1 : Math.cos(dir - outward(card)) < -0.05) continue;
+        const box = { x: x - 20, y: y - 20, w: s.w + 40, h: s.h + 40 };
+        const reach = edge(s.w, s.h, dir) + 30 + S / 2;
+        const cx = x + s.w / 2 + Math.cos(dir) * reach, cy = y + s.h / 2 + Math.sin(dir) * reach;
+        const branch = { x: cx - S / 2, y: cy - S / 2, w: S, h: S };
         let score = 0;
-        for (const o of zones) score += overlapArea(zone, o);
-        if (score < bestScore) { bestScore = score; best = { x, y, zone }; }
-        if (score === 0) break;
+        for (const o of zones) score += overlapArea(box, o) * (o.main ? 3 : 1) + (hasKids ? overlapArea(branch, o) * 0.6 : 0);
+        if (hasKids) score += offCanvas(branch) * 1.5; // its side needs to have room on the canvas
+        score += Math.hypot(x + s.w / 2 - sp.sx * W, y + s.h / 2 - sp.sy * H) * 20; // stay near its spot
+        if (score < bestScore) { bestScore = score; best = { x, y, dir, box, branch }; }
       }
       place(card, best.x, best.y);
+      heading.set(card, best.dir);
       placed.push({ x: best.x, y: best.y, ...s, main: true, owner: card, el: card });
-      zones.push(best.zone);
+      zones.push({ ...best.box, main: true });
+      if (hasKids) zones.push(best.branch);
     }
     for (const card of order) shuffled(kidsOf(card)).forEach((n) => placeNear(n, placed));
     tidyUp(placed);
-    return placed;
+    return placed.map((p) => ({ ...p, ...rectOf(p.el) })); // where everything really ended up
   }
 
-  // Is this arrangement good? No bad overlaps, and every small box sits nearest its own main box.
-  function looksGood(placed) {
+  // How many problems does this arrangement have? (boxes on top of each other, or a small box
+  // sitting nearer some other cluster's main box than its own). 0 = good.
+  function problems(placed) {
     const mains = placed.filter((p) => p.main);
+    let n = 0;
     for (let i = 0; i < placed.length; i++) {
-      for (let j = i + 1; j < placed.length; j++) if (badOverlap(placed[i], placed[j])) return false;
+      for (let j = i + 1; j < placed.length; j++) if (badOverlap(placed[i], placed[j])) n++;
       const p = placed[i];
       if (p.main) continue;
       const cx = p.x + p.w / 2, cy = p.y + p.h / 2;
       const own = toRect(cx, cy, mains.find((m) => m.el === p.owner));
-      if (mains.some((m) => m.el !== p.owner && toRect(cx, cy, m) < own)) return false;
+      if (mains.some((m) => m.el !== p.owner && toRect(cx, cy, m) < own)) n++;
     }
-    return true;
+    return n;
   }
 
   /* ---------- layout: phones ----------
@@ -255,14 +292,27 @@
 
   function layout() {
     sizeDesk();
-    const about = cards.find((c) => c.dataset.card === "about");
-    const order = [about, ...shuffled(cards.filter((c) => c !== about))].filter(Boolean);
-    if (isPhone()) stack(order);
+    heading.clear();
+    const about = byName("about");
+    // about first; then work + side projects together and writing + art together (shuffled)
+    const order = [about, ...shuffled([pairOf("work", "projects"), pairOf("writing", "art")]).flatMap(shuffled)].filter(Boolean);
+    for (const c of cards) if (!order.includes(c)) order.push(c); // any other category
+    if (isPhone()) {
+      order.forEach((c) => heading.set(c, Math.PI / 2)); // phones: small boxes sit below their main box
+      stack(order);
+    }
     else {
       // try a few shuffles; if it's still crowded, give the canvas a little more height
-      for (let attempt = 0; attempt < 6; attempt++) {
-        if (looksGood(scatter(order, attempt < 3 ? 1 : 1 + (attempt - 2) * 0.12))) break;
+      // (each try takes a few milliseconds); if none is perfect, keep the best one
+      let best = null;
+      for (let attempt = 0; attempt < 16; attempt++) {
+        const placed = scatter(order, attempt < 10 ? 1 : 1 + (attempt - 9) * 0.08);
+        const n = problems(placed);
+        if (!best || n < best.n) best = { n, height: desk.style.height, spots: placed.map((p) => [p.el, p.x, p.y]) };
+        if (n === 0) break;
       }
+      desk.style.height = best.height;
+      best.spots.forEach(([el, x, y]) => place(el, x, y));
     }
     // stacking: clusters in random order, about's on top; small boxes above their main box
     shuffled(order.slice(1)).forEach(clusterToFront);

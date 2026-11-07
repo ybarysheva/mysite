@@ -242,22 +242,11 @@ body.is-grabbing, body.is-grabbing * { cursor: grabbing !important; }
   margin-bottom: 6px;
 }
 
-/* ---------- writing: lined paper ---------- */
-.card--writing .card__body {
-  line-height: 24px;
-  padding: 12px 14px;
-  background-image: repeating-linear-gradient(
-    to bottom,
-    transparent 0 23px,
-    var(--rule) 23px 24px
-  );
-  background-position: 0 12px;
-}
-.card--writing p { margin-bottom: 24px; }
-.card--writing p:last-child { margin-bottom: 0; }
 /* ---------- small connected boxes (.node) ----------
    Links and examples for each category, joined to their main box by straight lines. */
 .node {
+  /* softer outline than the main boxes, so the main box of each cluster reads first */
+  --soft: color-mix(in srgb, var(--ink) 38%, var(--card));
   display: block;
   width: max-content;
   max-width: min(260px, 85vw);
@@ -265,8 +254,9 @@ body.is-grabbing, body.is-grabbing * { cursor: grabbing !important; }
   padding: 6px 10px;
   color: var(--ink);
   background: var(--card);
-  border: 1px solid var(--ink);
+  border: 1px solid var(--soft);
   font-size: 12px;
+  line-height: 1.5;
   text-decoration: none;
   -webkit-user-drag: none;
 }
@@ -280,8 +270,8 @@ body.is-grabbing, body.is-grabbing * { cursor: grabbing !important; }
   transition: opacity .35s ease, box-shadow .15s ease, transform .12s ease;
 }
 .desk.is-ready .node { opacity: 1; }
-.node.is-dragging { box-shadow: 4px 4px 0 var(--ink); }
-.node.is-lifted { transform: scale(1.04); box-shadow: 5px 5px 0 var(--ink); }
+.node.is-dragging { box-shadow: 4px 4px 0 var(--soft); }
+.node.is-lifted { transform: scale(1.04); box-shadow: 5px 5px 0 var(--soft); }
 
 /* plain links: "portfolio →" */
 .node--link::after { content: " →"; }
@@ -293,12 +283,15 @@ body.is-grabbing, body.is-grabbing * { cursor: grabbing !important; }
 }
 
 /* a fact: "currently / ux designer @ OTI" */
-.node__label {
-  display: block;
-  font-size: 10px;
-  letter-spacing: .06em;
+/* small labels: "currently", "listening now", art captions — one style everywhere */
+.node__label,
+.listening__label,
+.node--art figcaption {
+  font-size: 11px;
+  letter-spacing: .02em;
   color: var(--muted);
 }
+.node__label { display: block; }
 
 /* side projects */
 .node--project {
@@ -323,7 +316,7 @@ body.is-grabbing, body.is-grabbing * { cursor: grabbing !important; }
 .thumb {
   width: 40px;
   height: 40px;
-  border: 1px solid var(--ink);
+  border: 1px solid var(--soft);
   background: repeating-linear-gradient(45deg, var(--rule) 0 1px, transparent 1px 7px);
 }
 .pname {
@@ -332,12 +325,7 @@ body.is-grabbing, body.is-grabbing * { cursor: grabbing !important; }
   padding: 0 2px;
   margin-left: -2px;
 }
-.pdesc {
-  display: block;
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.4;
-}
+.pdesc { display: block; } /* same size and color as the rest of the box's text */
 
 /* art pieces */
 .node--art { padding: 6px 6px 0; }
@@ -361,8 +349,6 @@ body.is-grabbing, body.is-grabbing * { cursor: grabbing !important; }
   gap: 6px;
   max-width: var(--iw);
   padding: 3px 0 5px;
-  font-size: 10px;
-  color: var(--muted);
 }
 .node--art figcaption span {
   overflow: hidden;
@@ -392,8 +378,8 @@ body.is-grabbing, body.is-grabbing * { cursor: grabbing !important; }
 }
 .wires path {
   fill: none;
-  stroke: var(--muted);
-  stroke-width: 1.25;
+  stroke: color-mix(in srgb, var(--ink) 38%, transparent);
+  stroke-width: 1;
 }
 .desk:not(.is-ready) .wires { opacity: 0; }
 .wires { transition: opacity .6s ease .3s; }
@@ -460,8 +446,6 @@ body.is-live .corner {
   align-items: center;
   gap: 6px;
   margin: 0 0 6px;
-  font-size: 11px;
-  color: var(--muted);
 }
 .listening__track {
   display: grid;
@@ -477,11 +461,11 @@ body.is-live .corner {
 .listening__cover {
   width: 40px;
   height: 40px;
-  border: 1px solid var(--ink);
+  border: 1px solid var(--soft);
   object-fit: cover;
   background: repeating-linear-gradient(45deg, var(--rule) 0 1px, transparent 1px 6px);
 }
-.listening__text { min-width: 0; line-height: 1.4; }
+.listening__text { min-width: 0; }
 .listening__title,
 .listening__artist {
   display: block;
@@ -490,7 +474,7 @@ body.is-live .corner {
   text-overflow: ellipsis;
 }
 .listening__title { font-weight: 700; }
-.listening__artist { color: var(--muted); font-size: 12px; }
+.listening__artist { display: block; }
 
 /* tiny equalizer, only while something is playing */
 .eq { display: none; align-items: flex-end; gap: 1px; height: 9px; }
