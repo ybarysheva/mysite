@@ -296,7 +296,7 @@ body.is-grabbing, body.is-grabbing * { cursor: grabbing !important; }
 /* side projects */
 .node--project {
   display: grid;
-  grid-template-columns: 40px 1fr auto;
+  grid-template-columns: 1fr auto;
   align-items: center;
   gap: 10px;
   width: 250px;
@@ -325,7 +325,7 @@ body.is-grabbing, body.is-grabbing * { cursor: grabbing !important; }
   padding: 0 2px;
   margin-left: -2px;
 }
-.pdesc { display: block; } /* same size and color as the rest of the box's text */
+.pdesc { display: block; margin-top: 4px; } /* a little space under the title */ /* same size and color as the rest of the box's text */
 
 /* art pieces: just the image (no frame), with the ↗ beside it at the bottom */
 .node--art {
