@@ -540,3 +540,7 @@ body.is-live .corner {
 /* currently reading: one row per book */
 .reading__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .node--art:not(.is-folded) { border-color: transparent; } /* art stays frameless when open */
+/* currently reading: show full titles (wrap instead of "…") */
+.reading .listening__title,
+.reading .listening__artist { white-space: normal; overflow: visible; text-overflow: clip; }
+.reading .listening__track { align-items: start; }
