@@ -24,6 +24,17 @@ track; it stays hidden until there's an `/api/now-playing` endpoint to fill it.
 ## Email
 The address is stored reversed in `index.html` (`data-u` / `data-d`) and only assembled
 when someone hovers or clicks, so it never appears as plain text in the page source.
+Clicking "email" copies the address (shows "copied ✓"); if the browser can't copy,
+it opens the mail app instead.
+
+## Light / dark
+Dark is the default for everyone (`data-theme="dark"` on `<html>`). The button in the
+bottom-right switches to light and remembers the choice in that browser. Colors for both
+live at the top of `styles.css`.
+
+## Time + weather corner
+Bottom-left shows New York time and weather (°F), from Open-Meteo (free, no key).
+To change the place, edit `PLACE` in `script.js` (name, time zone, latitude/longitude).
 
 ## Run locally
 ```bash

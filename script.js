@@ -265,14 +265,100 @@
     requestAnimationFrame(() => desk.classList.add("is-ready"));
   };
 
-  /* ---------- email (assembled only when someone reaches for it) ---------- */
+  /* ---------- email: assembled only when someone reaches for it; click copies it ---------- */
   document.querySelectorAll(".js-email").forEach((a) => {
-    const reveal = () => {
-      const flip = (s) => [...s].reverse().join("");
-      a.href = "mailto:" + flip(a.dataset.u) + "@" + flip(a.dataset.d);
-    };
-    ["pointerenter", "focus", "click"].forEach((ev) => a.addEventListener(ev, reveal, { once: true }));
+    const flip = (s) => [...s].reverse().join("");
+    const address = () => flip(a.dataset.u) + "@" + flip(a.dataset.d);
+    const reveal = () => (a.href = "mailto:" + address()); // so long-press / right-click "copy" works too
+    ["pointerenter", "focus"].forEach((ev) => a.addEventListener(ev, reveal, { once: true }));
+    a.title = "copy email address";
+
+    let resetTimer;
+    a.addEventListener("click", async (e) => {
+      e.preventDefault();
+      reveal();
+      try {
+        await navigator.clipboard.writeText(address());
+      } catch (_) {
+        window.location.href = a.href; // can't copy here: open the mail app instead
+        return;
+      }
+      a.textContent = "copied ✓";
+      a.classList.add("is-copied");
+      clearTimeout(resetTimer);
+      resetTimer = setTimeout(() => {
+        a.textContent = "email";
+        a.classList.remove("is-copied");
+      }, 1500);
+    });
   });
+
+  /* ---------- light / dark toggle (dark by default; choice remembered) ---------- */
+  const themeBtn = document.querySelector(".theme-toggle");
+  function labelThemeButton() {
+    const label = document.documentElement.dataset.theme === "dark" ? "switch to light mode" : "switch to dark mode";
+    themeBtn.setAttribute("aria-label", label);
+    themeBtn.title = label;
+  }
+  if (themeBtn) {
+    labelThemeButton();
+    themeBtn.addEventListener("click", () => {
+      const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+      document.documentElement.dataset.theme = next;
+      try { localStorage.setItem("theme", next); } catch (_) {}
+      labelThemeButton();
+    });
+  }
+
+  /* ---------- New York time + weather (bottom-left corner) ----------
+     Weather from Open-Meteo: free, no key. Change PLACE to move it. */
+  const PLACE = { name: "new york", timeZone: "America/New_York", lat: 40.7128, lon: -74.006 };
+  const localEl = document.querySelector(".local");
+  const timeFmt = new Intl.DateTimeFormat("en-US", { timeZone: PLACE.timeZone, hour: "numeric", minute: "2-digit" });
+  let weatherText = "";
+
+  function weatherWord(code) {
+    if (code === 0) return "clear";
+    if (code === 1) return "mostly clear";
+    if (code === 2) return "partly cloudy";
+    if (code === 3) return "cloudy";
+    if (code === 45 || code === 48) return "foggy";
+    if (code >= 51 && code <= 57) return "drizzle";
+    if (code >= 61 && code <= 67) return "rain";
+    if (code >= 71 && code <= 77) return "snow";
+    if (code >= 80 && code <= 82) return "showers";
+    if (code === 85 || code === 86) return "snow showers";
+    if (code >= 95) return "thunderstorms";
+    return "";
+  }
+
+  function renderLocal() {
+    if (!localEl) return;
+    const time = timeFmt.format(new Date()).replace(/\s*([AP])M$/, (_, x) => x.toLowerCase() + "m"); // 3:42pm
+    localEl.textContent = [PLACE.name, time, weatherText].filter(Boolean).join(" · ");
+  }
+
+  async function loadWeather() {
+    try {
+      const res = await fetch(
+        "https://api.open-meteo.com/v1/forecast" +
+          `?latitude=${PLACE.lat}&longitude=${PLACE.lon}` +
+          "&current=temperature_2m,weather_code&temperature_unit=fahrenheit"
+      );
+      if (!res.ok) return;
+      const { current } = await res.json();
+      if (!current || typeof current.temperature_2m !== "number") return;
+      weatherText = [Math.round(current.temperature_2m) + "°F", weatherWord(current.weather_code)].filter(Boolean).join(" ");
+      renderLocal();
+    } catch (_) {
+      /* offline or blocked: just show the time */
+    }
+  }
+
+  renderLocal();
+  loadWeather();
+  setInterval(renderLocal, 30 * 1000);
+  setInterval(() => document.visibilityState === "visible" && loadWeather(), 15 * 60 * 1000);
 
   /* ---------- listening now (/api/now-playing, Spotify: not set up yet) ---------- */
   const listening = document.querySelector(".listening");
