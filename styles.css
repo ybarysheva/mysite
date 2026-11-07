@@ -530,3 +530,10 @@ body.is-live .corner {
 .node--art.is-folded { background: var(--card); }
 .node.is-folded { transition: transform .2s ease, opacity .35s ease; }
 .node.is-folded.is-peeking { transform: translate(var(--peek-x, 0), var(--peek-y, 0)); }
+/* tucked boxes: shaded (hatched) cards with a hairline edge, like the sketch */
+.node.is-folded {
+  border: 0.5px solid var(--ink);
+  background:
+    repeating-linear-gradient(45deg, color-mix(in srgb, var(--ink) 30%, transparent) 0 1px, transparent 1px 5px),
+    var(--card);
+}

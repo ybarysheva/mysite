@@ -89,9 +89,12 @@
         node.style.setProperty("--peek-y", (Math.sin(dir) * 7).toFixed(1) + "px");
         node.inert = folded;
         if (folded) {
-          // tucked behind, its far edge peeking out past the main box's edge
-          const reach = edge(a.w, a.h, dir) - edge(s.w, s.h, dir) + 7 + i * 5;
-          place(node, m.x + a.w / 2 + Math.cos(dir) * reach - s.w / 2, m.y + a.h / 2 + Math.sin(dir) * reach - s.h / 2, { remember: false });
+          // tucked behind, peeking out past the main box's edges: fanned around the side it
+          // opens toward, so each one shows at a slightly different spot
+          const n = kidsOf(card).length;
+          const t = dir + (i - (n - 1) / 2) * 0.75;
+          const reach = edge(a.w, a.h, t) - edge(s.w, s.h, t) + 12;
+          place(node, m.x + a.w / 2 + Math.cos(t) * reach - s.w / 2, m.y + a.h / 2 + Math.sin(t) * reach - s.h / 2, { remember: false });
           node.style.zIndex = (parseInt(card.style.zIndex, 10) || 10) - 1 - i;
         } else if (o) {
           place(node, clamp(m.x + o.dx, 0, desk.clientWidth - s.w), clamp(m.y + o.dy, 0, desk.clientHeight - s.h), { remember: false });
