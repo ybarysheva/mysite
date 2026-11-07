@@ -108,6 +108,11 @@ p:last-child { margin-bottom: 0; }
    you swipe around (both directions, normal momentum). The page itself stays
    screen-sized so the corner bits stay in their corners. */
 @media (max-width: 640px) {
+  /* slimmer boxes so the phone stack can zig-zag left/right, with a bit of
+     extra room at the bottom for the next box to tuck over */
+  .card { max-width: 85vw; }
+  .desk.is-live .card > .card__body { padding-bottom: 26px; }
+
   body.is-live .canvas {
     position: fixed;
     inset: 0;

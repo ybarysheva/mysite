@@ -83,6 +83,8 @@
     const about = cards.find((c) => c.dataset.card === "about");
     const order = [about, ...shuffled(cards.filter((c) => c !== about))].filter(Boolean);
 
+    if (isPhone()) return stack(boxes, order);
+
     const H = Math.max(VH, Math.ceil(totalArea / (W * 0.55)) + BOTTOM);
     desk.style.height = H + "px";
     const overlapAllowed = 0.15;
@@ -120,6 +122,37 @@
     // stacking order: random, but about on top
     shuffled(order).forEach(toFront);
     if (about) toFront(about);
+  }
+
+  /* Empty space at the bottom of a card, below its last line of content.
+     The next box in the phone stack may tuck over this much, and no more. */
+  function emptyBottom(card) {
+    const body = card.querySelector(":scope > .card__body");
+    const last = body && body.lastElementChild;
+    if (!last) return 0;
+    return Math.max(0, card.getBoundingClientRect().bottom - last.getBoundingClientRect().bottom);
+  }
+
+  /* ---------- layout: phones ----------
+     A loose stack down the first screen: about on top, the rest shuffled,
+     zig-zagging left/right, each box tucked ~15–25px over the one above
+     (never over its text). The canvas still has room to the right to drag
+     boxes out into. Later boxes sit on top so every top bar stays visible. */
+  function stack(boxes, order) {
+    const VW = viewportWidth();
+    let y = PAD + rand(0, 8);
+    let prev = null;
+    order.forEach((card, i) => {
+      const s = boxes.get(card); // includes a stuck-on note, if any
+      const maxX = Math.max(PAD, VW - s.w - PAD);
+      const x = i % 2 === 0 ? Math.min(maxX, PAD + rand(0, 10)) : Math.max(PAD, maxX - rand(0, 10));
+      if (prev) y -= Math.min(rand(15, 25), emptyBottom(prev) - 1);
+      place(card, x, y + s.top);
+      toFront(card);
+      y += s.h;
+      prev = card;
+    });
+    desk.style.height = Math.max(window.innerHeight, y + BOTTOM + 40) + "px";
   }
 
   /* ---------- art pile ---------- */

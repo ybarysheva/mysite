@@ -9,6 +9,8 @@ Plain HTML/CSS/JS, no build step.
 - `script.js`: random layout + dragging.
 
 ## On phones
+Boxes start as a loose stack down the first screen (about on top, the rest shuffled,
+zig-zagging left/right and tucked slightly over each other: `stack()` in `script.js`).
 The canvas is about two screens wide: swipe anywhere to look around. To move a box,
 press and hold it (~0.4s) until it lifts, or drag it by its top bar. Hold time and
 canvas size are `HOLD_MS` and `sizeDesk()` in `script.js`.
