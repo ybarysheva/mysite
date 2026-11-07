@@ -158,7 +158,8 @@ p:last-child { margin-bottom: 0; }
    link-preview / "copy" menus on long press. */
 @media (hover: none) {
   .desk.is-live .card,
-  .desk.is-live .card a {
+  .desk.is-live .node,
+  .desk.is-live .node a {
     -webkit-touch-callout: none;
     -webkit-user-select: none;
     user-select: none;
@@ -169,10 +170,8 @@ p:last-child { margin-bottom: 0; }
    you swipe around (both directions, normal momentum). The page itself stays
    screen-sized so the corner bits stay in their corners. */
 @media (max-width: 640px) {
-  /* slimmer boxes so the phone stack can zig-zag left/right, with a bit of
-     extra room at the bottom for the next box to tuck over */
+  /* slimmer boxes so the phone stack can zig-zag left/right */
   .card { max-width: 85vw; }
-  .desk.is-live .card > .card__body { padding-bottom: 26px; }
 
   body.is-live .canvas {
     position: fixed;
@@ -220,27 +219,6 @@ p:last-child { margin-bottom: 0; }
 
 body.is-grabbing, body.is-grabbing * { cursor: grabbing !important; }
 
-/* ---------- links ---------- */
-.links {
-  list-style: none;
-  margin: 12px 0 0;
-  padding: 0;
-}
-.links li + li { margin-top: 2px; }
-.links a {
-  text-decoration: none;
-  padding: 0 2px;
-  margin: 0 -2px;
-}
-.links a::after { content: " →"; }
-.links a.is-copied::after { content: ""; }
-
-.links a:hover,
-.projects a:hover .pname {
-  background: var(--ink);
-  color: var(--card);
-}
-
 /* ---------- about ---------- */
 .card--about .card__body {
   padding: 20px 22px 22px;
@@ -264,40 +242,87 @@ body.is-grabbing, body.is-grabbing * { cursor: grabbing !important; }
   margin-bottom: 6px;
 }
 
-/* "currently" note, stuck to the work card's top-right corner */
-.card--work { position: relative; }
-.note {
-  position: absolute;
-  top: -22px;
-  right: -56px;
-  z-index: 1;
-  width: 190px;
+/* ---------- writing: lined paper ---------- */
+.card--writing .card__body {
+  line-height: 24px;
+  padding: 12px 14px;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0 23px,
+    var(--rule) 23px 24px
+  );
+  background-position: 0 12px;
+}
+.card--writing p { margin-bottom: 24px; }
+.card--writing p:last-child { margin-bottom: 0; }
+/* ---------- small connected boxes (.node) ----------
+   Links and examples for each category, joined to their main box by straight lines. */
+.node {
+  display: block;
+  width: max-content;
+  max-width: min(260px, 85vw);
+  margin: 0;
+  padding: 6px 10px;
+  color: var(--ink);
   background: var(--card);
   border: 1px solid var(--ink);
+  font-size: 12px;
+  text-decoration: none;
+  -webkit-user-drag: none;
 }
-.note .card__body { padding: 10px 12px; }
-@media (max-width: 640px) {
-  .note { right: -8px; }
+.node[hidden] { display: none; }
+.desk.is-live .node {
+  position: absolute;
+  top: 0;
+  left: 0;
+  opacity: 0;
+  cursor: grab;
+  transition: opacity .35s ease, box-shadow .15s ease, transform .12s ease;
+}
+.desk.is-ready .node { opacity: 1; }
+.node.is-dragging { box-shadow: 4px 4px 0 var(--ink); }
+.node.is-lifted { transform: scale(1.04); box-shadow: 5px 5px 0 var(--ink); }
+
+/* plain links: "portfolio →" */
+.node--link::after { content: " →"; }
+.node--link.is-copied::after { content: ""; }
+.node--link:hover,
+.node--project:hover .pname {
+  background: var(--ink);
+  color: var(--card);
 }
 
-/* ---------- projects ---------- */
-.projects {
-  list-style: none;
-  margin: -4px 0;
-  padding: 0;
+/* a fact: "currently / ux designer @ OTI" */
+.node__label {
+  display: block;
+  font-size: 10px;
+  letter-spacing: .06em;
+  color: var(--muted);
 }
-.projects li + li { border-top: 1px dashed var(--rule); }
-.projects a {
+
+/* side projects */
+.node--project {
   display: grid;
-  grid-template-columns: 44px 1fr auto;
+  grid-template-columns: 40px 1fr auto;
   align-items: center;
-  gap: 12px;
-  padding: 8px 0;
-  text-decoration: none;
+  gap: 10px;
+  width: 250px;
+  padding: 8px 10px;
 }
+/* a piece of writing: title + one sentence */
+.node--piece {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 10px;
+  width: 250px;
+  padding: 8px 10px;
+}
+.node--piece:hover .pname { background: var(--ink); color: var(--card); }
+
 .thumb {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   border: 1px solid var(--ink);
   background: repeating-linear-gradient(45deg, var(--rule) 0 1px, transparent 1px 7px);
 }
@@ -314,60 +339,10 @@ body.is-grabbing, body.is-grabbing * { cursor: grabbing !important; }
   line-height: 1.4;
 }
 
-/* ---------- writing: lined paper ---------- */
-.card--writing .card__body {
-  line-height: 24px;
-  padding: 12px 14px;
-  background-image: repeating-linear-gradient(
-    to bottom,
-    transparent 0 23px,
-    var(--rule) 23px 24px
-  );
-  background-position: 0 12px;
-}
-.card--writing p { margin-bottom: 24px; }
-.card--writing p:last-child { margin-bottom: 0; }
-.card--writing .links { margin-top: 0; }
-
-
-/* ---------- art ---------- */
-.art__pile {
-  position: relative;
-  height: 270px;
-  margin: -12px -14px 0;
-  border-bottom: 1px solid var(--rule);
-  overflow: hidden;
-}
-
-/* No-JS fallback: show images in a simple row */
-.desk:not(.is-live) .art__pile {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  height: auto;
-  padding: 12px;
-}
-
-.art__img {
-  margin: 0;
-  padding: 6px 6px 0;
-  background: var(--card);
-  border: 1px solid var(--ink);
-  user-select: none;
-  -webkit-user-select: none;
-}
-.desk.is-live .art__img {
-  position: absolute;
-  top: 0;
-  left: 0;
-  cursor: grab;
-  transition: transform .12s ease;
-}
-.art__img.is-dragging { box-shadow: 4px 4px 0 var(--ink); }
-.art__img.is-lifted { transform: scale(1.04); }
-
-.art__img .ph,
-.art__img img {
+/* art pieces */
+.node--art { padding: 6px 6px 0; }
+.node--art .ph,
+.node--art img {
   display: block;
   width: var(--iw);
   height: var(--ih);
@@ -375,15 +350,53 @@ body.is-grabbing, body.is-grabbing * { cursor: grabbing !important; }
   object-fit: cover;
   pointer-events: none;
 }
-.art__img .ph {
+.node--art .ph {
   background: repeating-linear-gradient(45deg, var(--rule) 0 1px, transparent 1px 8px);
   border: 1px solid var(--rule);
 }
-.art__img figcaption {
-  padding: 2px 0 4px;
+.node--art figcaption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  max-width: var(--iw);
+  padding: 3px 0 5px;
   font-size: 10px;
   color: var(--muted);
 }
+.node--art figcaption span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+/* the little ↗ that opens the piece on Instagram */
+.node__out {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin: -3px -2px -3px 0;
+  color: var(--ink);
+}
+.node__out:hover { background: var(--ink); color: var(--card); }
+
+/* the lines between a main box and its small boxes (drawn underneath all boxes) */
+.wires {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  overflow: visible;
+  pointer-events: none;
+}
+.wires path {
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 1.25;
+}
+.desk:not(.is-ready) .wires { opacity: 0; }
+.wires { transition: opacity .6s ease .3s; }
 
 /* ---------- corners: NYC time + weather (left), drag hint (right) ---------- */
 .corner { display: none; }
@@ -435,15 +448,12 @@ body.is-live .corner {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .desk.is-live .card { transition: none; }
+  .desk.is-live .card,
+  .desk.is-live .node { transition: none; }
 }
 
-/* ---------- listening (about card) ---------- */
-.listening {
-  margin: 12px 0 0;
-  padding: 10px 0 0;
-  border-top: 1px dashed var(--rule);
-}
+/* ---------- listening now (a small box off the about card) ---------- */
+.listening { width: 240px; padding: 8px 10px; }
 .listening[hidden] { display: none; }
 .listening__label {
   display: flex;

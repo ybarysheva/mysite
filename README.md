@@ -11,20 +11,23 @@ Ideas that are planned but not built yet live in [`IDEAS.md`](IDEAS.md).
 - `script.js`: random layout + dragging.
 
 ## On phones
-Boxes start as a loose stack down the first screen (about on top, the rest shuffled,
-zig-zagging left/right and tucked slightly over each other: `stack()` in `script.js`).
+Clusters start stacked down the first screen: each main box, then its small boxes just below
+it, then the next category (about first, the rest shuffled: `stack()` in `script.js`).
 The canvas is about two screens wide: swipe anywhere to look around. To move a box,
 press and hold it (~0.4s) until it lifts, or drag it by its top bar. Hold time and
 canvas size are `HOLD_MS` and `sizeDesk()` in `script.js`.
 
 ## Editing content
-- **Links:** swap the placeholder `href`s in `index.html`.
-- **Art images:** in the art card, replace each `<span class="ph"></span>` with
-  `<img src="images/whatever.jpg" alt="description">`. The `--iw` / `--ih`
-  values on each `<figure>` set the image's size in the pile.
-- **New card:** copy any `<article class="card">` block and give it a unique `data-card`.
-- **Stuck-on notes:** an `<aside class="note">` inside a card sits on its top-right corner
-  and moves with it (that's how "currently" sits on "work").
+Each category is a **cluster**: a main box (`<article class="card" data-card="work">`) with the
+info, plus small boxes (`class="node" data-parent="work"`) for its links and examples, joined to
+it by straight lines. Dragging a main box brings its small boxes along; small boxes can also be
+dragged on their own.
+- **Links:** swap the placeholder `href`s in `index.html` (`node--link` boxes).
+- **New link/example:** copy a `.node` and set `data-parent` to the main box's `data-card`.
+- **Art:** each piece is a `node--art` figure. Replace its `<span class="ph"></span>` with
+  `<img src="images/whatever.jpg" alt="description">`; `--iw` / `--ih` set its size.
+  The ↗ icon (`.node__out`) links each piece out; they point to the Instagram profile for now.
+- **Writing pieces:** `node--piece` boxes (title + one sentence), like More Than Borsch.
 
 ## "Listening now" (Spotify)
 The about card shows what you're playing on Spotify right now (or the last thing you played).

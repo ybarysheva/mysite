@@ -2,15 +2,20 @@
   const desk = document.getElementById("desk");
   if (!desk) return;
 
+  /* Each category is a cluster: a main box (.card) plus small connected boxes (.node)
+     whose data-parent is the main box's data-card. Straight lines join them. */
   const cards = [...desk.querySelectorAll(".card")];
-  const piles = [...desk.querySelectorAll(".art__pile")];
+  const nodes = [...desk.querySelectorAll(".node")];
+  const parentOf = (node) => cards.find((c) => c.dataset.card === node.dataset.parent);
+  const kidsOf = (card) => nodes.filter((n) => n.dataset.parent === card.dataset.card && !n.hidden);
+  const shown = () => [...cards, ...nodes.filter((n) => !n.hidden)];
   const hint = document.querySelector(".hint");
 
   const PAD = 16;      // min distance from screen edges
-  const BOTTOM = 40;   // breathing room at the bottom (keeps clear of the hint)
+  const BOTTOM = 40;   // breathing room at the bottom (keeps clear of the corner labels)
   const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  const pos = new Map();   // where each element is drawn right now
+  const pos = new Map();   // where each box is drawn right now
   const home = new Map();  // where it was put (by the shuffle or by a drag)
   let z = 10;
 
@@ -30,6 +35,8 @@
     const h = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
     return w > 0 && h > 0 ? w * h : 0;
   };
+  const sizeOf = (el) => ({ w: el.offsetWidth, h: el.offsetHeight });
+  const rectOf = (el) => ({ ...(pos.get(el) || { x: 0, y: 0 }), ...sizeOf(el) });
 
   function place(el, x, y, { remember = true } = {}) {
     x = Math.round(x);
@@ -38,139 +45,236 @@
     el.style.top = y + "px";
     pos.set(el, { x, y });
     if (remember) home.set(el, { x, y });
+    queueWires();
   }
 
-  function toFront(card) {
-    card.style.zIndex = ++z;
+  function toFront(el) {
+    el.style.zIndex = ++z;
+  }
+  // a main box comes forward with its whole cluster (small boxes on top)
+  function clusterToFront(card) {
+    toFront(card);
+    kidsOf(card).forEach(toFront);
   }
 
-  /* How far a card's stuck-on note (e.g. "currently" on work) pokes out
-     above and to the right of the card. Layout treats card + note as one box. */
-  function overhang(card) {
-    const note = card.querySelector(".note");
-    if (!note) return { top: 0, right: 0 };
-    return {
-      top: Math.max(0, -note.offsetTop),
-      right: Math.max(0, note.offsetLeft + note.offsetWidth - card.clientWidth),
-    };
+  /* ---------- connecting lines ---------- */
+  const NS = "http://www.w3.org/2000/svg";
+  const wires = document.createElementNS(NS, "svg");
+  wires.setAttribute("class", "wires");
+  wires.setAttribute("aria-hidden", "true");
+  desk.prepend(wires);
+  const paths = new Map();
+
+  function drawWires() {
+    wires.setAttribute("width", desk.offsetWidth);
+    wires.setAttribute("height", desk.offsetHeight);
+    for (const node of nodes) {
+      let path = paths.get(node);
+      const parent = parentOf(node);
+      if (node.hidden || !parent || !pos.has(node) || !pos.has(parent)) {
+        if (path) path.remove(), paths.delete(node);
+        continue;
+      }
+      if (!path) {
+        path = document.createElementNS(NS, "path");
+        wires.appendChild(path);
+        paths.set(node, path);
+      }
+      // straight line between the two boxes' centers (the boxes cover the ends)
+      const a = rectOf(parent), b = rectOf(node);
+      path.setAttribute("d", `M ${a.x + a.w / 2} ${a.y + a.h / 2} L ${b.x + b.w / 2} ${b.y + b.h / 2}`);
+    }
+  }
+  let wiresQueued = false;
+  function queueWires() {
+    if (wiresQueued) return;
+    wiresQueued = true;
+    requestAnimationFrame(() => {
+      wiresQueued = false;
+      drawWires();
+    });
   }
 
   /* Phones get a canvas about two screens wide that you swipe around;
-     desktop's canvas is just the window. */
+     desktop's canvas is just the window (taller if needed). */
   const viewportWidth = () => document.documentElement.clientWidth;
   const isPhone = () => viewportWidth() < 640;
   function sizeDesk() {
     desk.style.width = isPhone() ? Math.max(viewportWidth() * 2, 760) + "px" : "";
   }
 
-  /* ---------- layout: curated random ----------
-     Cards land randomly, but each one tries a bunch of spots and keeps one
-     that only overlaps others a little. The about card is never covered and
-     always lands in the first screenful (on phones: the first screen you see). */
-  function scatter() {
-    sizeDesk();
+  // Smaller screens pack things a bit closer together (1 on a big screen, down to 0.6).
+  const roomScale = () => clamp((desk.clientWidth * window.innerHeight) / (1440 * 900), 0.6, 1);
+
+  // Where a line from a box's center at angle t leaves the box (distance to its edge).
+  const edge = (w, h, t) => Math.min(w / 2 / Math.max(Math.abs(Math.cos(t)), 1e-6), h / 2 / Math.max(Math.abs(Math.sin(t)), 1e-6));
+
+  /* Put a small box near its main box: tries lots of spots in a ring around it and
+     keeps one close by that doesn't sit on top of other boxes. */
+  function placeNear(node, placed) {
+    const parent = parentOf(node);
+    const a = rectOf(parent);
+    const s = sizeOf(node);
+    const W = desk.clientWidth, H = desk.clientHeight;
+    const cx = a.x + a.w / 2, cy = a.y + a.h / 2;
+    let best = null, bestScore = Infinity;
+    const crowd = kidsOf(parent).length; // bigger families get to spread out further
+    const k = roomScale();
+    for (let i = 0; i < 500; i++) {
+      const t = rand(0, Math.PI * 2);
+      const gap = rand(26 * k, (70 + crowd * 35) * k);
+      const dist = edge(a.w, a.h, t) + gap + edge(s.w, s.h, t);
+      const x = clamp(cx + Math.cos(t) * dist - s.w / 2, PAD, W - s.w - PAD);
+      const y = clamp(cy + Math.sin(t) * dist - s.h / 2, PAD, H - s.h - BOTTOM);
+      const r = { x, y, w: s.w, h: s.h };
+      const air = 10 * k; // keep a little air around boxes
+      const roomy = { x: x - air, y: y - air, w: s.w + 2 * air, h: s.h + 2 * air };
+      const mx = x + s.w / 2, my = y + s.h / 2;
+      const ownDist = toRect(mx, my, a);
+      let score = gap * 14;
+      for (const o of placed) {
+        score += overlapArea(roomy, o) * 10; // nothing should sit on top of anything else
+        // it should clearly belong to its own main box, not look like part of another cluster
+        if (o.main && o.owner !== parent && toRect(mx, my, o) < ownDist + 40) score += 40000;
+      }
+      if (score < bestScore) { bestScore = score; best = r; }
+    }
+    place(node, best.x, best.y);
+    placed.push({ ...best, main: false, owner: parent, el: node });
+  }
+
+  // boxes shouldn't cover each other (every one has text or a link on it)
+  const badOverlap = (a, b) => overlapArea(a, b) > 0;
+
+  /* After everything's placed: any small box still sitting on a main box or on another
+     cluster's box gets a second try (now that it can see where everything ended up). */
+  function tidyUp(placed) {
+    for (let pass = 0; pass < 3; pass++) {
+      let moved = 0;
+      for (const item of placed.filter((p) => !p.main)) {
+        const clash = placed.some((o) => o !== item && badOverlap(item, o));
+        if (!clash) continue;
+        placed.splice(placed.indexOf(item), 1);
+        placeNear(item.el, placed);
+        moved++;
+      }
+      if (!moved) break;
+    }
+  }
+  // distance from a point to the nearest edge of a box (0 if inside)
+  function toRect(px, py, r) {
+    const dx = Math.max(r.x - px, 0, px - (r.x + r.w));
+    const dy = Math.max(r.y - py, 0, py - (r.y + r.h));
+    return Math.hypot(dx, dy);
+  }
+
+  /* ---------- layout: desktop ----------
+     Clusters land randomly but spread out: each main box keeps some room around it
+     for its small boxes, which then gather around it. About always lands in the first
+     screenful. */
+  function scatter(order, roomier = 1) {
     const W = desk.clientWidth;
     const VW = viewportWidth();
     const VH = window.innerHeight;
-    const boxes = new Map(
-      cards.map((c) => {
-        const o = overhang(c);
-        return [c, { w: c.offsetWidth + o.right, h: c.offsetHeight + o.top, top: o.top }];
-      })
-    );
-    const totalArea = [...boxes.values()].reduce((s, v) => s + v.w * v.h, 0);
-
-    const about = cards.find((c) => c.dataset.card === "about");
-    const order = [about, ...shuffled(cards.filter((c) => c !== about))].filter(Boolean);
-
-    if (isPhone()) return stack(boxes, order);
-
-    const H = Math.max(VH, Math.ceil(totalArea / (W * 0.55)) + BOTTOM);
+    const total = shown().reduce((s, el) => { const o = sizeOf(el); return s + o.w * o.h; }, 0);
+    const H = Math.round(Math.max(VH, Math.ceil(total / (W * 0.42)) + BOTTOM) * roomier);
     desk.style.height = H + "px";
-    const overlapAllowed = 0.15;
-    const rects = new Map();
 
+    // room each cluster wants around its main box, based on how much it has to hold
+    const margin = new Map(order.map((c) => {
+      const kidsArea = kidsOf(c).reduce((s, n) => { const o = sizeOf(n); return s + o.w * o.h; }, 0);
+      return [c, clamp(Math.sqrt(kidsArea) * 0.5, 50, 170) * roomScale()];
+    }));
+
+    const placed = [];     // every box placed so far
+    const zones = [];      // main boxes + their surrounding room
+    const about = order[0];
     for (const card of order) {
-      const s = boxes.get(card);
-      const maxX = W - s.w - PAD;
-      const maxY = H - s.h - BOTTOM;
-
-      let best = null;
-      let bestScore = Infinity;
-
-      for (let i = 0; i < 120; i++) {
+      const s = sizeOf(card);
+      const m = margin.get(card);
+      const maxX = W - s.w - PAD, maxY = H - s.h - BOTTOM;
+      let best = null, bestScore = Infinity;
+      for (let i = 0; i < 200; i++) {
         const x = clamp(card === about ? rand(PAD, Math.min(maxX, VW - s.w - PAD)) : rand(PAD, maxX), PAD, maxX);
-        const y = clamp(card === about ? rand(PAD, Math.min(maxY, VH * 0.45)) : rand(PAD, maxY), PAD, maxY);
-
-        const r = { x, y, w: s.w, h: s.h };
+        const y = clamp(card === about ? rand(PAD, Math.min(maxY, VH * 0.4)) : rand(PAD, maxY), PAD, maxY);
+        const zone = { x: x - m, y: y - m, w: s.w + 2 * m, h: s.h + 2 * m };
         let score = 0;
-        for (const [other, o] of rects) {
-          const allowance = other === about ? 0 : overlapAllowed * Math.min(r.w * r.h, o.w * o.h);
-          score += Math.max(0, overlapArea(r, o) - allowance);
-        }
-        if (score < bestScore) {
-          bestScore = score;
-          best = r;
-        }
+        for (const o of zones) score += overlapArea(zone, o);
+        if (score < bestScore) { bestScore = score; best = { x, y, zone }; }
         if (score === 0) break;
       }
-
-      rects.set(card, best);
-      place(card, best.x, best.y + s.top);
+      place(card, best.x, best.y);
+      placed.push({ x: best.x, y: best.y, ...s, main: true, owner: card, el: card });
+      zones.push(best.zone);
     }
-
-    // stacking order: random, but about on top
-    shuffled(order).forEach(toFront);
-    if (about) toFront(about);
+    for (const card of order) shuffled(kidsOf(card)).forEach((n) => placeNear(n, placed));
+    tidyUp(placed);
+    return placed;
   }
 
-  /* Empty space at the bottom of a card, below its last line of content.
-     The next box in the phone stack may tuck over this much, and no more. */
-  function emptyBottom(card) {
-    const body = card.querySelector(":scope > .card__body");
-    const last = body && body.lastElementChild;
-    if (!last) return 0;
-    return Math.max(0, card.getBoundingClientRect().bottom - last.getBoundingClientRect().bottom);
+  // Is this arrangement good? No bad overlaps, and every small box sits nearest its own main box.
+  function looksGood(placed) {
+    const mains = placed.filter((p) => p.main);
+    for (let i = 0; i < placed.length; i++) {
+      for (let j = i + 1; j < placed.length; j++) if (badOverlap(placed[i], placed[j])) return false;
+      const p = placed[i];
+      if (p.main) continue;
+      const cx = p.x + p.w / 2, cy = p.y + p.h / 2;
+      const own = toRect(cx, cy, mains.find((m) => m.el === p.owner));
+      if (mains.some((m) => m.el !== p.owner && toRect(cx, cy, m) < own)) return false;
+    }
+    return true;
   }
 
   /* ---------- layout: phones ----------
-     A loose stack down the first screen: about on top, the rest shuffled,
-     zig-zagging left/right, each box tucked ~15–25px over the one above
-     (never over its text). The canvas still has room to the right to drag
-     boxes out into. Later boxes sit on top so every top bar stays visible. */
-  function stack(boxes, order) {
+     Top to bottom: each main box (zig-zagging left/right), then its small boxes in
+     loose rows just below it, then the next category. About is first. The canvas
+     still has room to the right to drag things out into. */
+  function stack(order) {
     const VW = viewportWidth();
     let y = PAD + rand(0, 8);
-    let prev = null;
     order.forEach((card, i) => {
-      const s = boxes.get(card); // includes a stuck-on note, if any
+      const s = sizeOf(card);
       const maxX = Math.max(PAD, VW - s.w - PAD);
-      const x = i % 2 === 0 ? Math.min(maxX, PAD + rand(0, 10)) : Math.max(PAD, maxX - rand(0, 10));
-      if (prev) y -= Math.min(rand(15, 25), emptyBottom(prev) - 1);
-      place(card, x, y + s.top);
-      toFront(card);
-      y += s.h;
-      prev = card;
+      place(card, i % 2 === 0 ? Math.min(maxX, PAD + rand(0, 10)) : Math.max(PAD, maxX - rand(0, 10)), y);
+      y += s.h + rand(22, 30);
+
+      // small boxes flow in rows under it
+      let x = PAD + rand(8, 22), rowH = 0;
+      for (const n of kidsOf(card)) {
+        const k = sizeOf(n);
+        if (x > PAD + 30 && x + k.w > VW - PAD) { y += rowH + 12; x = PAD + rand(8, 22); rowH = 0; }
+        place(n, Math.min(x, Math.max(PAD, VW - k.w - PAD)), y + rand(-3, 3));
+        x += k.w + rand(10, 18);
+        rowH = Math.max(rowH, k.h);
+      }
+      y += rowH + rand(36, 48);
     });
-    desk.style.height = Math.max(window.innerHeight, y + BOTTOM + 40) + "px";
+    desk.style.height = Math.max(window.innerHeight, y + BOTTOM) + "px";
   }
 
-  /* ---------- art pile ---------- */
-  function scatterArt(pile) {
-    const imgs = shuffled(pile.querySelectorAll(".art__img"));
-    const W = pile.clientWidth;
-    const H = pile.clientHeight;
-    imgs.forEach((img, i) => {
-      place(img, rand(0, Math.max(0, W - img.offsetWidth)), rand(0, Math.max(0, H - img.offsetHeight)));
-      img.style.zIndex = i + 1;
-    });
-    pile.dataset.z = imgs.length;
+  function layout() {
+    sizeDesk();
+    const about = cards.find((c) => c.dataset.card === "about");
+    const order = [about, ...shuffled(cards.filter((c) => c !== about))].filter(Boolean);
+    if (isPhone()) stack(order);
+    else {
+      // try a few shuffles; if it's still crowded, give the canvas a little more height
+      for (let attempt = 0; attempt < 6; attempt++) {
+        if (looksGood(scatter(order, attempt < 3 ? 1 : 1 + (attempt - 2) * 0.12))) break;
+      }
+    }
+    // stacking: clusters in random order, about's on top; small boxes above their main box
+    shuffled(order.slice(1)).forEach(clusterToFront);
+    if (about) clusterToFront(about);
+    drawWires();
   }
 
   /* ---------- dragging ----------
-     Mouse: drag a box from anywhere (links still click).
-     Touch: swiping moves around the canvas. To move a box, either drag its top
-     bar, or press and hold anywhere on it (~0.4s) until it lifts. */
+     Mouse: drag any box from anywhere (a click without dragging still follows links).
+     Touch: swiping moves around the canvas. To move a box, drag a main box by its
+     top bar, or press and hold any box (~0.4s) until it lifts.
+     Dragging a main box brings its small boxes along. */
   const HOLD_MS = 400; // how long to hold before a box lifts
   const SLOP = 8;      // finger can wobble this much (px) and still count as holding
   let holding = false; // a touch is waiting to become a hold
@@ -181,31 +285,38 @@
   document.addEventListener("touchmove", (e) => { if (lifted) e.preventDefault(); }, { passive: false });
   // No long-press menus / link previews while holding a box.
   document.addEventListener("contextmenu", (e) => { if (holding || lifted) e.preventDefault(); });
-  // A hold that started on a link shouldn't open the link when you let go.
+  // A drag or hold that started on a link shouldn't open the link when you let go.
   document.addEventListener("click", (e) => {
     if (!swallowClick) return;
     swallowClick = false;
     e.preventDefault();
     e.stopPropagation();
   }, true);
+  // No browser "drag the link/image" ghost; we move the boxes ourselves.
+  desk.addEventListener("dragstart", (e) => e.preventDefault());
 
-  function makeDraggable(el, { handle, bounds, onFront, onMoveStart }) {
+  function makeDraggable(el, { handle, followers = () => [], onFront }) {
+    const deskBounds = (box) => ({ maxX: desk.clientWidth - box.offsetWidth, maxY: desk.clientHeight - box.offsetHeight });
+
     function drag(startEvent, { liftedByHold = false } = {}) {
       const start = { x: startEvent.clientX, y: startEvent.clientY };
       const origin = { ...pos.get(el) };
+      const crew = followers().map((f) => ({ f, o: { ...pos.get(f) } }));
       let moved = false;
       const begin = () => {
         moved = true;
         el.classList.add("is-dragging");
         document.body.classList.add("is-grabbing");
-        onMoveStart && onMoveStart();
+        hideHint();
+        // Only grab the pointer once it's really a drag, so a plain click still reaches
+        // links inside a box (like the ↗ on an art piece).
+        try { el.setPointerCapture(startEvent.pointerId); } catch (_) {}
       };
       if (liftedByHold) {
         lifted = true;
         el.classList.add("is-lifted");
         begin();
       }
-      try { el.setPointerCapture(startEvent.pointerId); } catch (_) {}
 
       const move = (ev) => {
         if (ev.pointerId !== startEvent.pointerId) return;
@@ -215,8 +326,14 @@
           if (Math.hypot(dx, dy) < 3) return;
           begin();
         }
-        const b = bounds();
-        place(el, clamp(origin.x + dx, b.minX || 0, b.maxX), clamp(origin.y + dy, b.minY || 0, b.maxY));
+        const b = deskBounds(el);
+        const nx = clamp(origin.x + dx, 0, b.maxX), ny = clamp(origin.y + dy, 0, b.maxY);
+        place(el, nx, ny);
+        // the cluster comes along by the same amount
+        for (const { f, o } of crew) {
+          const fb = deskBounds(f);
+          place(f, clamp(o.x + nx - origin.x, 0, fb.maxX), clamp(o.y + ny - origin.y, 0, fb.maxY));
+        }
       };
 
       const end = (ev) => {
@@ -226,8 +343,8 @@
         el.removeEventListener("pointercancel", end);
         el.classList.remove("is-dragging", "is-lifted");
         document.body.classList.remove("is-grabbing");
-        if (liftedByHold) {
-          lifted = false;
+        if (liftedByHold) lifted = false;
+        if (moved || liftedByHold) {
           swallowClick = true;
           setTimeout(() => (swallowClick = false), 400); // in case no click follows
         }
@@ -241,10 +358,10 @@
     el.addEventListener("pointerdown", (e) => {
       if (e.button !== 0) return;
       const touch = e.pointerType !== "mouse";
-      if (e.target.closest(touch ? "button" : "a, button")) return;
-      e.stopPropagation(); // the innermost draggable wins (an art image, not its card)
+      if (e.target.closest("button")) return;
+      e.stopPropagation();
 
-      // Mouse, or touch on the top bar: drag right away.
+      // Mouse, or touch on a main box's top bar: drag right away.
       if (!touch || (handle && e.target.closest(handle))) {
         e.preventDefault();
         onFront();
@@ -284,38 +401,12 @@
   }
 
   cards.forEach((card) => {
-    makeDraggable(card, {
-      handle: ".card__bar",
-      onFront: () => toFront(card),
-      onMoveStart: hideHint,
-      bounds: () => {
-        const o = overhang(card);
-        return {
-          minY: o.top,
-          maxX: desk.clientWidth - card.offsetWidth - o.right,
-          maxY: desk.clientHeight - card.offsetHeight,
-        };
-      },
-    });
-    // keyboard users: bring a card forward when tabbing into it
-    card.addEventListener("focusin", () => toFront(card));
+    makeDraggable(card, { handle: ".card__bar", followers: () => kidsOf(card), onFront: () => clusterToFront(card) });
+    card.addEventListener("focusin", () => clusterToFront(card)); // keyboard users
   });
-
-  piles.forEach((pile) => {
-    pile.querySelectorAll(".art__img").forEach((img) => {
-      makeDraggable(img, {
-        onFront: () => {
-          pile.dataset.z = Number(pile.dataset.z || 0) + 1;
-          img.style.zIndex = pile.dataset.z;
-          toFront(pile.closest(".card"));
-        },
-        onMoveStart: hideHint,
-        bounds: () => ({
-          maxX: pile.clientWidth - img.offsetWidth,
-          maxY: pile.clientHeight - img.offsetHeight,
-        }),
-      });
-    });
+  nodes.forEach((node) => {
+    makeDraggable(node, { onFront: () => toFront(node) });
+    node.addEventListener("focusin", () => toFront(node));
   });
 
   /* Resizing never reshuffles. Everything stays put; a box only slides in if
@@ -323,18 +414,12 @@
      when there's room again. */
   function keepInView() {
     sizeDesk(); // e.g. a phone rotating past the phone/desktop width
-    for (const card of cards) {
-      const h = home.get(card);
+    for (const el of shown()) {
+      const h = home.get(el);
       if (!h) continue;
-      place(card, clamp(h.x, 0, desk.clientWidth - card.offsetWidth - overhang(card).right - PAD), h.y, { remember: false });
+      place(el, clamp(h.x, 0, desk.clientWidth - el.offsetWidth - PAD), h.y, { remember: false });
     }
-    for (const pile of piles) {
-      for (const img of pile.querySelectorAll(".art__img")) {
-        const h = home.get(img);
-        if (!h) continue;
-        place(img, clamp(h.x, 0, pile.clientWidth - img.offsetWidth), h.y, { remember: false });
-      }
-    }
+    drawWires();
   }
 
   let resizeTimer;
@@ -349,22 +434,35 @@
   // Always open at the top-left of the canvas (where the about card is), even on reload.
   if ("scrollRestoration" in history) history.scrollRestoration = "manual";
   const canvas = document.getElementById("canvas");
+  let laidOut = false;
 
   const init = () => {
-    piles.forEach(scatterArt);
-    scatter();
+    layout();
+    laidOut = true;
     window.scrollTo(0, 0);
     if (canvas) canvas.scrollTo(0, 0);
 
-    // fade cards in one by one
+    // fade boxes in one by one
     if (!reduceMotion) {
-      [...cards]
-        .sort((a, b) => a.style.zIndex - b.style.zIndex)
-        .forEach((c, i) => (c.style.transitionDelay = i * 70 + "ms"));
-      setTimeout(() => cards.forEach((c) => (c.style.transitionDelay = "")), 1200);
+      const els = shown().sort((a, b) => a.style.zIndex - b.style.zIndex);
+      els.forEach((c, i) => (c.style.transitionDelay = Math.min(i * 45, 900) + "ms"));
+      setTimeout(() => els.forEach((c) => (c.style.transitionDelay = "")), 1600);
     }
     requestAnimationFrame(() => desk.classList.add("is-ready"));
   };
+
+  // A small box that appears after the layout (e.g. "listening now") finds a spot near its main box.
+  function placeLate(node) {
+    if (!laidOut || pos.has(node)) return queueWires();
+    const placed = shown().filter((el) => el !== node && pos.has(el)).map((el) => ({
+      ...rectOf(el),
+      main: el.classList.contains("card"),
+      owner: el.classList.contains("card") ? el : parentOf(el),
+      el,
+    }));
+    placeNear(node, placed);
+    toFront(node);
+  }
 
   /* ---------- email: assembled only when someone reaches for it; click copies it ---------- */
   document.querySelectorAll(".js-email").forEach((a) => {
@@ -477,6 +575,7 @@
       else cover.removeAttribute("src");
       listening.classList.toggle("is-live", track.nowPlaying);
       listening.hidden = false;
+      placeLate(listening);
     } catch (_) {
       /* not deployed / not configured: just leave it hidden */
     }
