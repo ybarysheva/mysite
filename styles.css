@@ -254,7 +254,7 @@ body.is-grabbing, body.is-grabbing * { cursor: grabbing !important; }
   padding: 6px 10px;
   color: var(--ink);
   background: var(--card);
-  border: 1px solid transparent; /* no outline: the fill and the line are enough */
+  border: 0.5px solid var(--ink); /* same hairline as the main boxes */
   font-size: 12px;
   line-height: 1.5;
   text-decoration: none;
@@ -529,7 +529,7 @@ body.is-live .corner {
 .node.is-folded::after { visibility: hidden; }
 .node--art.is-folded { background: var(--card); }
 .node.is-folded { transition: transform .2s ease, opacity .35s ease; }
-.node.is-folded.is-peeking { transform: translate(var(--peek-x, 0), var(--peek-y, 0)) rotate(var(--tilt, 0deg)); }
+.node.is-folded.is-peeking { transform: translate(var(--peek-x, 0), var(--peek-y, 0)) rotate(var(--tilt-out, 0deg)); }
 /* tucked boxes: outlined cards, slightly tilted, peeking out from behind (like the sketch) */
 .node.is-folded {
   border: 0.5px solid var(--ink);
@@ -539,3 +539,4 @@ body.is-live .corner {
 .node.is-folded { color: transparent; } /* hide bare text inside tucked boxes too */
 /* currently reading: one row per book */
 .reading__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.node--art:not(.is-folded) { border-color: transparent; } /* art stays frameless when open */

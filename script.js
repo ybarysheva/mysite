@@ -84,10 +84,13 @@
         const s = sizeOf(node);
         const folded = !isOpen(card);
         node.classList.toggle("is-folded", folded);
-        // which way to nudge it on hover (toward the side it opens to)
-        node.style.setProperty("--peek-x", (Math.cos(dir) * 7).toFixed(1) + "px");
-        node.style.setProperty("--peek-y", (Math.sin(dir) * 7).toFixed(1) + "px");
-        node.style.setProperty("--tilt", ((i % 2 ? -1 : 1) * (2.5 + (i % 3) * 1.2)).toFixed(1) + "deg");
+        // on hover each one fans out along its own angle (spreading out like a hand of cards)
+        const fan = dir + (i - (kidsOf(card).length - 1) / 2) * 0.75;
+        const tilt = (i % 2 ? -1 : 1) * (2.5 + (i % 3) * 1.2);
+        node.style.setProperty("--peek-x", (Math.cos(fan) * 9).toFixed(1) + "px");
+        node.style.setProperty("--peek-y", (Math.sin(fan) * 9).toFixed(1) + "px");
+        node.style.setProperty("--tilt", tilt.toFixed(1) + "deg");
+        node.style.setProperty("--tilt-out", (tilt * 2.2).toFixed(1) + "deg");
         node.inert = folded;
         if (folded) {
           // tucked behind, peeking out past the main box's edges: fanned around the side it
