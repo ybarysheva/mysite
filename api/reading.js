@@ -3,7 +3,7 @@
 // Her member id is looked up once from her Goodreads author page (or set GOODREADS_USER_ID in Vercel).
 
 const AUTHOR_PAGE = "https://www.goodreads.com/author/show/21172078.Yana_Barysheva";
-let userId = process.env.GOODREADS_USER_ID || null;
+let userId = process.env.GOODREADS_USER_ID || "4844438"; // Yana's Goodreads member number
 
 const json = (body, status = 200, cache = "s-maxage=3600, stale-while-revalidate=86400") =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", "Cache-Control": cache } });

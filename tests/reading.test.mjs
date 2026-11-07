@@ -13,12 +13,12 @@ let calls = [];
 globalThis.fetch = async (url) => {
   calls.push(String(url));
   if (String(url).includes("/author/show/")) return { ok: true, text: async () => '<a href="/user/show/987654-yana">profile</a>' };
-  if (String(url).includes("list_rss/987654")) return { ok: true, text: async () => FEED };
+  if (String(url).includes("list_rss/4844438")) return { ok: true, text: async () => FEED };
   return { ok: false, status: 404, text: async () => "" };
 };
 const { GET, parseFeed } = await import("../api/reading.js");
 
-test("finds the member id from the author page, returns every book on the shelf", async () => {
+test("reads Yana's currently-reading shelf and returns every book", async () => {
   const body = await (await GET()).json();
   assert.equal(body.books.length, 2);
   assert.deepEqual(body.books[0], { title: "Piranesi", author: "Susanna Clarke", image: "https://i.gr-assets.com/m.jpg", url: "https://www.goodreads.com/book/show/50202953" });
