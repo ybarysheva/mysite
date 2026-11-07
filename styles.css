@@ -528,3 +528,5 @@ body.is-live .corner {
 .node.is-folded > *,
 .node.is-folded::after { visibility: hidden; }
 .node--art.is-folded { background: var(--card); }
+.node.is-folded { transition: transform .2s ease, opacity .35s ease; }
+.node.is-folded.is-peeking { transform: translate(var(--peek-x, 0), var(--peek-y, 0)); }

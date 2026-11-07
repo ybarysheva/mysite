@@ -84,6 +84,9 @@
         const s = sizeOf(node);
         const folded = !isOpen(card);
         node.classList.toggle("is-folded", folded);
+        // which way to nudge it on hover (toward the side it opens to)
+        node.style.setProperty("--peek-x", (Math.cos(dir) * 7).toFixed(1) + "px");
+        node.style.setProperty("--peek-y", (Math.sin(dir) * 7).toFixed(1) + "px");
         node.inert = folded;
         if (folded) {
           // tucked behind, its far edge peeking out past the main box's edge
@@ -535,6 +538,10 @@
   cards.forEach((card) => {
     makeDraggable(card, { handle: ".card__bar", followers: () => kidsOf(card), onFront: () => clusterToFront(card), onTap: () => toggle(card) });
     card.addEventListener("focusin", () => clusterToFront(card)); // keyboard users
+    // hovering a closed main box nudges its tucked boxes out a bit, hinting there's more
+    const peek = (on) => kidsOf(card).forEach((n) => n.classList.toggle("is-peeking", on));
+    card.addEventListener("pointerenter", () => peek(true));
+    card.addEventListener("pointerleave", () => peek(false));
     card.addEventListener("keydown", (e) => {
       if ((e.key === "Enter" || e.key === " ") && card.getAttribute("role") === "button") {
         e.preventDefault();
