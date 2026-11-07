@@ -516,3 +516,15 @@ body.is-live .corner {
   50% { transform: translate(-3px, -5px) rotate(5deg); }
 }
 @media (prefers-reduced-motion: reduce) { .clef { animation: none; } }
+
+/* ---------- folding (desktop): small boxes tucked behind their main box ---------- */
+.node.is-folded { pointer-events: none; }
+.node.is-folded .clef { visibility: hidden; }
+.desk.is-unfolding .node { transition: left .45s cubic-bezier(.2, .8, .2, 1), top .45s cubic-bezier(.2, .8, .2, 1), opacity .35s ease; }
+.desk.is-unfolding .wires { opacity: 0; transition: none; }
+.card[role="button"] { cursor: pointer; }
+.card[role="button"] .card__body { cursor: pointer; }
+/* tucked boxes show only their edges peeking out, not their contents */
+.node.is-folded > *,
+.node.is-folded::after { visibility: hidden; }
+.node--art.is-folded { background: var(--card); }

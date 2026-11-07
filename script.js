@@ -58,6 +58,71 @@
     kidsOf(card).forEach(toFront);
   }
 
+  /* ---------- folding (desktop) ----------
+     A cluster's small boxes either sit at their spots (open) or tuck behind the main box,
+     peeking out a little toward their side (folded). One cluster opens at a time; about
+     stays open. Phones keep everything open. */
+  const foldable = () => !isPhone();
+  const openNow = new Set();     // main boxes whose small boxes are out
+  const offset = new Map();      // small box → where it sits relative to its main box when open
+  const isOpen = (card) => !foldable() || alwaysOpen(card) || openNow.has(card);
+  const isFolded = (node) => !isOpen(parentOf(node));
+
+  function remember(node) {
+    const p = pos.get(node), m = pos.get(parentOf(node));
+    if (p && m) offset.set(node, { dx: p.x - m.x, dy: p.y - m.y });
+  }
+
+  function applyFolds() {
+    for (const card of cards) {
+      const m = pos.get(card);
+      if (!m) continue;
+      const a = sizeOf(card);
+      const dir = heading.get(card) ?? Math.PI / 2;
+      kidsOf(card).forEach((node, i) => {
+        const o = offset.get(node);
+        const s = sizeOf(node);
+        const folded = !isOpen(card);
+        node.classList.toggle("is-folded", folded);
+        node.inert = folded;
+        if (folded) {
+          // tucked behind, its far edge peeking out past the main box's edge
+          const reach = edge(a.w, a.h, dir) - edge(s.w, s.h, dir) + 7 + i * 5;
+          place(node, m.x + a.w / 2 + Math.cos(dir) * reach - s.w / 2, m.y + a.h / 2 + Math.sin(dir) * reach - s.h / 2, { remember: false });
+          node.style.zIndex = (parseInt(card.style.zIndex, 10) || 10) - 1 - i;
+        } else if (o) {
+          place(node, clamp(m.x + o.dx, 0, desk.clientWidth - s.w), clamp(m.y + o.dy, 0, desk.clientHeight - s.h), { remember: false });
+          node.style.zIndex = ++z;
+        }
+      });
+      if (foldable() && !alwaysOpen(card)) {
+        card.setAttribute("role", "button");
+        card.tabIndex = 0;
+        card.setAttribute("aria-expanded", String(isOpen(card)));
+      } else {
+        card.removeAttribute("role");
+        card.removeAttribute("tabindex");
+        card.removeAttribute("aria-expanded");
+      }
+    }
+    queueWires();
+  }
+
+  function toggle(card) {
+    if (!foldable() || alwaysOpen(card) || !kidsOf(card).length) return;
+    const opening = !openNow.has(card);
+    openNow.clear();
+    if (opening) openNow.add(card);
+    if (!reduceMotion) {
+      desk.classList.add("is-unfolding");
+      clearTimeout(toggle.t);
+      toggle.t = setTimeout(() => desk.classList.remove("is-unfolding"), 500);
+    }
+    clusterToFront(card);
+    applyFolds();
+    hideHint();
+  }
+
   /* ---------- connecting lines ---------- */
   const NS = "http://www.w3.org/2000/svg";
   const wires = document.createElementNS(NS, "svg");
@@ -72,7 +137,7 @@
     for (const node of nodes) {
       let path = paths.get(node);
       const parent = parentOf(node);
-      if (node.hidden || !parent || !pos.has(node) || !pos.has(parent)) {
+      if (node.hidden || !parent || !pos.has(node) || !pos.has(parent) || isFolded(node)) {
         if (path) path.remove(), paths.delete(node);
         continue;
       }
@@ -139,8 +204,9 @@
       const mx = x + s.w / 2, my = y + s.h / 2;
       const ownDist = toRect(mx, my, a);
       let score = gap * 14;
+      const me = { main: false, owner: parent };
       for (const o of placed) {
-        score += overlapArea(roomy, o) * 10; // nothing should sit on top of anything else
+        if (!canShare(me, o)) score += overlapArea(roomy, o) * 10; // nothing should sit on top of anything else
         // it should clearly belong to its own main box, not look like part of another cluster
         if (o.main && o.owner !== parent && toRect(mx, my, o) < ownDist + 40) score += 40000;
       }
@@ -150,8 +216,12 @@
     placed.push({ ...best, main: false, owner: parent, el: node });
   }
 
+  // On desktop only one cluster (plus about) is open at a time, so small boxes from two
+  // different folding clusters never show together and may share space.
+  const alwaysOpen = (card) => card && card.dataset.card === "about";
+  const canShare = (a, b) => foldable() && !a.main && !b.main && a.owner !== b.owner && !alwaysOpen(a.owner) && !alwaysOpen(b.owner);
   // boxes shouldn't cover each other (every one has text or a link on it)
-  const badOverlap = (a, b) => overlapArea(a, b) > 0;
+  const badOverlap = (a, b) => !canShare(a, b) && overlapArea(a, b) > 0;
 
   /* After everything's placed: any small box still sitting on a main box or on another
      cluster's box gets a second try (now that it can see where everything ended up). */
@@ -183,7 +253,10 @@
     const W = desk.clientWidth;
     const VW = viewportWidth();
     const VH = window.innerHeight;
-    const total = shown().reduce((s, el) => { const o = sizeOf(el); return s + o.w * o.h; }, 0);
+    // only one cluster's small boxes show at a time (plus about's), so size for that
+    const areaOf = (els) => els.reduce((t, el) => { const o = sizeOf(el); return t + o.w * o.h; }, 0);
+    const kidAreas = order.filter((c) => !alwaysOpen(c)).map((c) => areaOf(kidsOf(c)));
+    const total = areaOf(cards) + areaOf(kidsOf(order[0])) + (foldable() ? Math.max(0, ...kidAreas) * 2 : kidAreas.reduce((t, v) => t + v, 0));
     const H = Math.round(Math.max(VH, Math.ceil(total / (W * 0.42)) + BOTTOM) * roomier);
     desk.style.height = H + "px";
 
@@ -226,12 +299,16 @@
         const dir = (Math.floor(rand(0, 8)) * Math.PI) / 4; // one of 8 directions
         // branches point away from the middle (about's own can go any way but up)
         if (card === about ? Math.sin(dir) < -0.1 : Math.cos(dir - outward(card)) < -0.05) continue;
-        const box = { x: x - 20, y: y - 20, w: s.w + 40, h: s.h + 40 };
+        const box = { x: x - 36, y: y - 36, w: s.w + 72, h: s.h + 72 };
         const reach = edge(s.w, s.h, dir) + 30 + S / 2;
         const cx = x + s.w / 2 + Math.cos(dir) * reach, cy = y + s.h / 2 + Math.sin(dir) * reach;
         const branch = { x: cx - S / 2, y: cy - S / 2, w: S, h: S };
         let score = 0;
-        for (const o of zones) score += overlapArea(box, o) * (o.main ? 3 : 1) + (hasKids ? overlapArea(branch, o) * 0.6 : 0);
+        for (const o of zones) {
+          score += overlapArea(box, o) * (o.main ? 3 : 1);
+          const share = foldable() && !o.main && !alwaysOpen(o.owner) && !alwaysOpen(card);
+          if (hasKids && !share) score += overlapArea(branch, o) * 0.6;
+        }
         if (hasKids) score += offCanvas(branch) * 1.5; // its side needs to have room on the canvas
         score += Math.hypot(x + s.w / 2 - sp.sx * W, y + s.h / 2 - sp.sy * H) * 20; // stay near its spot
         if (score < bestScore) { bestScore = score; best = { x, y, dir, box, branch }; }
@@ -239,8 +316,8 @@
       place(card, best.x, best.y);
       heading.set(card, best.dir);
       placed.push({ x: best.x, y: best.y, ...s, main: true, owner: card, el: card });
-      zones.push({ ...best.box, main: true });
-      if (hasKids) zones.push(best.branch);
+      zones.push({ ...best.box, main: true, owner: card });
+      if (hasKids) zones.push({ ...best.branch, owner: card });
     }
     for (const card of order) shuffled(kidsOf(card)).forEach((n) => placeNear(n, placed));
     tidyUp(placed);
@@ -317,6 +394,9 @@
     // stacking: clusters in random order, about's on top; small boxes above their main box
     shuffled(order.slice(1)).forEach(clusterToFront);
     if (about) clusterToFront(about);
+    nodes.forEach(remember);
+    openNow.clear();
+    applyFolds();
     drawWires();
   }
 
@@ -345,7 +425,7 @@
   // No browser "drag the link/image" ghost; we move the boxes ourselves.
   desk.addEventListener("dragstart", (e) => e.preventDefault());
 
-  function makeDraggable(el, { handle, followers = () => [], onFront }) {
+  function makeDraggable(el, { handle, followers = () => [], onFront, onTap, onDrop }) {
     const deskBounds = (box) => ({ maxX: desk.clientWidth - box.offsetWidth, maxY: desk.clientHeight - box.offsetHeight });
 
     function drag(startEvent, { liftedByHold = false } = {}) {
@@ -394,6 +474,8 @@
         el.classList.remove("is-dragging", "is-lifted");
         document.body.classList.remove("is-grabbing");
         if (liftedByHold) lifted = false;
+        if (!moved && !liftedByHold && onTap) onTap();
+        if (moved && onDrop) onDrop();
         if (moved || liftedByHold) {
           swallowClick = true;
           setTimeout(() => (swallowClick = false), 400); // in case no click follows
@@ -451,11 +533,17 @@
   }
 
   cards.forEach((card) => {
-    makeDraggable(card, { handle: ".card__bar", followers: () => kidsOf(card), onFront: () => clusterToFront(card) });
+    makeDraggable(card, { handle: ".card__bar", followers: () => kidsOf(card), onFront: () => clusterToFront(card), onTap: () => toggle(card) });
     card.addEventListener("focusin", () => clusterToFront(card)); // keyboard users
+    card.addEventListener("keydown", (e) => {
+      if ((e.key === "Enter" || e.key === " ") && card.getAttribute("role") === "button") {
+        e.preventDefault();
+        toggle(card);
+      }
+    });
   });
   nodes.forEach((node) => {
-    makeDraggable(node, { onFront: () => toFront(node) });
+    makeDraggable(node, { onFront: () => toFront(node), onDrop: () => remember(node) });
     node.addEventListener("focusin", () => toFront(node));
   });
 
@@ -464,11 +552,12 @@
      when there's room again. */
   function keepInView() {
     sizeDesk(); // e.g. a phone rotating past the phone/desktop width
-    for (const el of shown()) {
+    for (const el of cards) {
       const h = home.get(el);
       if (!h) continue;
       place(el, clamp(h.x, 0, desk.clientWidth - el.offsetWidth - PAD), h.y, { remember: false });
     }
+    applyFolds(); // small boxes follow their main box (open or tucked)
     drawWires();
   }
 
@@ -511,7 +600,8 @@
       el,
     }));
     placeNear(node, placed);
-    toFront(node);
+    remember(node);
+    applyFolds();
   }
 
   /* ---------- email: assembled only when someone reaches for it; click copies it ---------- */
