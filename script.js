@@ -394,23 +394,6 @@
     });
   });
 
-  /* ---------- light / dark toggle (dark by default; choice remembered) ---------- */
-  const themeBtn = document.querySelector(".theme-toggle");
-  function labelThemeButton() {
-    const label = document.documentElement.dataset.theme === "dark" ? "switch to light mode" : "switch to dark mode";
-    themeBtn.setAttribute("aria-label", label);
-    themeBtn.title = label;
-  }
-  if (themeBtn) {
-    labelThemeButton();
-    themeBtn.addEventListener("click", () => {
-      const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
-      document.documentElement.dataset.theme = next;
-      try { localStorage.setItem("theme", next); } catch (_) {}
-      labelThemeButton();
-    });
-  }
-
   /* ---------- New York time + weather (bottom-left corner) ----------
      Weather from Open-Meteo: free, no key. Change PLACE to move it. */
   const PLACE = { name: "new york", timeZone: "America/New_York", lat: 40.7128, lon: -74.006 };
@@ -444,12 +427,14 @@
       const res = await fetch(
         "https://api.open-meteo.com/v1/forecast" +
           `?latitude=${PLACE.lat}&longitude=${PLACE.lon}` +
-          "&current=temperature_2m,weather_code&temperature_unit=fahrenheit"
+          "&current=temperature_2m,weather_code,cloud_cover&temperature_unit=fahrenheit"
       );
       if (!res.ok) return;
       const { current } = await res.json();
       if (!current || typeof current.temperature_2m !== "number") return;
       weatherText = [Math.round(current.temperature_2m) + "°F", weatherWord(current.weather_code)].filter(Boolean).join(" ");
+      // clouds also grey out the sky background (sky.js)
+      if (window.sky && typeof current.cloud_cover === "number") window.sky.setClouds(current.cloud_cover, current.weather_code);
       renderLocal();
     } catch (_) {
       /* offline or blocked: just show the time */

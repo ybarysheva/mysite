@@ -1,8 +1,26 @@
 /* ---------- tokens ----------
-   Dark is the default for everyone (<html data-theme="dark">); the toggle in the
-   bottom-right corner switches to light and remembers the choice. */
+   The site follows the sky in New York (sky.js): light while the sun is up, dark at
+   night, with a soft sky-colored gradient behind everything (--sky-top / --sky-bottom).
+   Without JavaScript it's simply dark. */
 :root {
   --font: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+/* Registered as colors so they can cross-fade (the light/dark switch at dusk and dawn,
+   and the sky slowly drifting). Browsers that don't support this just switch instantly. */
+@property --bg     { syntax: "<color>"; inherits: true; initial-value: #111111; }
+@property --card   { syntax: "<color>"; inherits: true; initial-value: #191919; }
+@property --ink    { syntax: "<color>"; inherits: true; initial-value: #ececec; }
+@property --muted  { syntax: "<color>"; inherits: true; initial-value: #8a8a8a; }
+@property --rule   { syntax: "<color>"; inherits: true; initial-value: #2c2c2c; }
+@property --dot    { syntax: "<color>"; inherits: true; initial-value: #2a2a2a; }
+@property --sky-top    { syntax: "<color>"; inherits: true; initial-value: #111111; }
+@property --sky-bottom { syntax: "<color>"; inherits: true; initial-value: #111111; }
+
+:root.sky-ready {
+  transition:
+    --bg 3s ease, --card 3s ease, --ink 3s ease, --muted 3s ease, --rule 3s ease, --dot 3s ease,
+    --sky-top 60s linear, --sky-bottom 60s linear;
 }
 
 :root,
@@ -13,6 +31,8 @@
   --muted: #777777;
   --rule: #e2e2dd;
   --dot: #d6d6d1;
+  --sky-top: #f5f5f2;
+  --sky-bottom: #f5f5f2;
   color-scheme: light;
 }
 
@@ -23,6 +43,8 @@
   --muted: #8a8a8a;
   --rule: #2c2c2c;
   --dot: #2a2a2a;
+  --sky-top: #111111;
+  --sky-bottom: #111111;
   color-scheme: dark;
 }
 
@@ -33,11 +55,18 @@ html, body { margin: 0; }
 body {
   min-height: 100vh;
   background-color: var(--bg);
-  background-image: radial-gradient(var(--dot) 1px, transparent 1.2px);
-  background-size: 20px 20px;
   color: var(--ink);
   font: 13px/1.6 var(--font);
   -webkit-font-smoothing: antialiased;
+}
+
+/* the NY sky, fixed behind everything */
+.sky {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(to bottom, var(--sky-top), var(--sky-bottom));
+  pointer-events: none;
 }
 
 a { color: inherit; }
@@ -50,6 +79,8 @@ p:last-child { margin-bottom: 0; }
 
 /* No-JS fallback: cards simply wrap in a row */
 .desk {
+  background-image: radial-gradient(var(--dot) 1px, transparent 1.2px);
+  background-size: 20px 20px;
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
@@ -119,12 +150,6 @@ p:last-child { margin-bottom: 0; }
     overflow: auto;
     overscroll-behavior: none;
     -webkit-overflow-scrolling: touch;
-  }
-  /* dots travel with the canvas */
-  body.is-live .desk {
-    background-color: var(--bg);
-    background-image: radial-gradient(var(--dot) 1px, transparent 1.2px);
-    background-size: 20px 20px;
   }
 }
 
@@ -330,7 +355,7 @@ body.is-grabbing, body.is-grabbing * { cursor: grabbing !important; }
   color: var(--muted);
 }
 
-/* ---------- corners: NYC time + weather (left), hint + theme toggle (right) ---------- */
+/* ---------- corners: NYC time + weather (left), drag hint (right) ---------- */
 .corner { display: none; }
 
 body.is-live .corner {
@@ -350,7 +375,9 @@ body.is-live .corner {
 .local {
   padding: 1px 6px;
   margin-left: -6px;
-  background: var(--bg);
+  background: color-mix(in srgb, var(--bg) 70%, transparent);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
   white-space: nowrap;
 }
 .local:empty { display: none; }
@@ -362,32 +389,16 @@ body.is-live .corner {
 }
 .hint.is-gone { opacity: 0; }
 
-.theme-toggle {
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  color: var(--ink);
-  background: var(--card);
-  border: 1px solid var(--ink);
-  border-radius: 0;
-  cursor: pointer;
-}
-.theme-toggle:hover { background: var(--ink); color: var(--card); }
-.theme-toggle svg { width: 14px; height: 14px; }
-/* show the sun in dark mode (switch to light), the moon in light mode */
-:root[data-theme="dark"] .icon-moon,
-:root:not([data-theme="dark"]) .icon-sun { display: none; }
-
-/* phones: the hint gets its own line above the toggle so nothing collides */
+/* phones: the hint sits one line up so it never collides with the time/weather */
 @media (max-width: 640px) {
-  body.is-live .corner--right {
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 6px;
+  body.is-live .corner--right { bottom: 40px; }
+  .hint {
+    padding: 1px 6px;
+    margin-right: -6px;
+    background: color-mix(in srgb, var(--bg) 70%, transparent);
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
   }
-  .hint { padding: 1px 6px; margin-right: -6px; background: var(--bg); }
 }
 .hint--touch { display: none; }
 @media (hover: none) {

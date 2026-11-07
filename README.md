@@ -49,10 +49,15 @@ when someone hovers or clicks, so it never appears as plain text in the page sou
 Clicking "email" copies the address (shows "copied ✓"); if the browser can't copy,
 it opens the mail app instead.
 
-## Light / dark
-Dark is the default for everyone (`data-theme="dark"` on `<html>`). The button in the
-bottom-right switches to light and remembers the choice in that browser. Colors for both
-live at the top of `styles.css`.
+## NY sky background (light by day, dark at night)
+`sky.js` works out where the sun is in New York right now and sets the colors to match:
+pale blue at midday, peach/pink near the bottom around sunrise and sunset, a dim rust/plum glow
+at dusk and dawn, near-black navy at night. The whole site is light while the sun is up and
+dark at night (it switches when the sun is ~4° below the horizon, cross-fading over a few seconds).
+Clouds from the weather lookup pull the colors toward grey. It recalculates every minute, so the
+change is too slow to notice. No light/dark button: the sky decides.
+- Colors: the `DAY` / `NIGHT` tables at the top of `sky.js` (by sun height, morning vs evening).
+- Without JavaScript the site is simply dark.
 
 ## Time + weather corner
 Bottom-left shows New York time and weather (°F), from Open-Meteo (free, no key).
