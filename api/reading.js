@@ -57,7 +57,22 @@ export function parseShelfPage(html) {
   }).filter(Boolean);
 }
 
-export async function GET() {
+// Goodreads' public "custom widget" (what their widgets page embeds): JavaScript that writes
+// HTML with each book's cover, title and author.
+export function parseWidget(js) {
+  const html = js.replace(/\\"/g, '"').replace(/\\\//g, "/").replace(/\\n/g, "\n");
+  const out = [];
+  const re = /class="gr_custom_each_container[^"]*"[\s\S]*?(?=class="gr_custom_each_container|$)/g;
+  for (const block of html.match(re) || []) {
+    const img = (block.match(/<img[^>]*src="([^"]+)"/) || [])[1] || null;
+    const t = block.match(/class="gr_custom_title[^"]*"[^>]*>\s*<a[^>]*href="([^"]+)"[^>]*>([^<]+)<\/a>/);
+    const au = (block.match(/class="gr_custom_author[^"]*"[^>]*>[\s\S]*?<a[^>]*>([^<]+)<\/a>/) || [])[1] || "";
+    if (t) out.push({ title: decode(t[2]).trim(), author: decode(au).trim(), image: img ? img.replace(/\._S[XY]\d+_/, "._SY160_") : null, url: t[1] });
+  }
+  return out;
+}
+
+export async function GET(request) {
   try {
     const id = await findUserId();
     if (!id) return json({ books: [], error: "no goodreads user" }, 502, "no-store");
@@ -65,12 +80,20 @@ export async function GET() {
     let books = [];
     const rss = await fetch(`https://www.goodreads.com/review/list_rss/${id}?shelf=currently-reading`, { headers });
     if (rss.ok) books = parseFeed(await rss.text());
+    const debug = request && new URL(request.url).searchParams.has("debug") ? { rss: rss.status } : null;
     if (!books.length) {
       const page = await fetch(`https://www.goodreads.com/review/list/${id}?shelf=currently-reading&per_page=20`, { headers });
-      if (!page.ok) return json({ books: [], error: `goodreads ${page.status}` }, 502, "no-store");
-      books = parseShelfPage(await page.text());
+      const html = await page.text();
+      books = page.ok ? parseShelfPage(html) : [];
+      if (debug) Object.assign(debug, { page: page.status, pageLength: html.length, pageStart: html.slice(0, 300) });
     }
-    return json({ books: books.slice(0, 6) });
+    if (!books.length) {
+      const w = await fetch(`https://www.goodreads.com/review/custom_widget/${id}.currently-reading?cover_position=left&cover_size=small&num_books=10&order=d&shelf=currently-reading&show_author=1&show_cover=1&show_rating=0&show_review=0&show_tags=0&show_title=1&sort=date_added&widget_id=1`, { headers });
+      const js = await w.text();
+      books = w.ok ? parseWidget(js) : [];
+      if (debug) Object.assign(debug, { widget: w.status, widgetLength: js.length, widgetStart: js.slice(0, 600) });
+    }
+    return json(debug ? { books: books.slice(0, 6), debug } : { books: books.slice(0, 6) }, 200, debug ? "no-store" : undefined);
   } catch (err) {
     return json({ books: [], error: String(err.message || err) }, 502, "no-store");
   }

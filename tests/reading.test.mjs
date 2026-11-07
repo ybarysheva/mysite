@@ -37,3 +37,9 @@ test("reads the shelf page when the feed needs a key", async () => {
     <td class="field author"><div class="value"><a href="/author/show/1624.Herman_Melville">Melville, Herman</a></div></td></tr></table>`;
   assert.deepEqual(parseShelfPage(html), [{ title: "Moby-Dick or, The Whale", author: "Herman Melville", image: "https://i.gr-assets.com/images/S/x/1._SY160_.jpg", url: "https://www.goodreads.com/book/show/153747.Moby_Dick" }]);
 });
+
+test("reads Goodreads' public custom widget", async () => {
+  const { parseWidget } = await import("../api/reading.js");
+  const js = 'var x = "<div class=\\"gr_custom_each_container_1\\"><div class=\\"gr_custom_book_container_1\\"><a href=\\"https:\\/\\/www.goodreads.com\\/review\\/show\\/9\\"><img alt=\\"Moby\\" src=\\"https:\\/\\/i.gr-assets.com\\/a._SY75_.jpg\\" \\/><\\/a><\\/div><div class=\\"gr_custom_title_1\\"><a href=\\"https:\\/\\/www.goodreads.com\\/review\\/show\\/9\\">Moby-Dick or, The Whale<\\/a><\\/div><div class=\\"gr_custom_author_1\\">by <a href=\\"https:\\/\\/www.goodreads.com\\/author\\/show\\/1624\\">Herman Melville<\\/a><\\/div><\\/div>";';
+  assert.deepEqual(parseWidget(js), [{ title: "Moby-Dick or, The Whale", author: "Herman Melville", image: "https://i.gr-assets.com/a._SY160_.jpg", url: "https://www.goodreads.com/review/show/9" }]);
+});
