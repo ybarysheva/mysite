@@ -8,6 +8,11 @@ Plain HTML/CSS/JS, no build step.
 - `styles.css`: look and feel. Colors and font are at the top.
 - `script.js`: random layout + dragging.
 
+## On phones
+The canvas is about two screens wide: swipe anywhere to look around. To move a box,
+press and hold it (~0.4s) until it lifts, or drag it by its top bar. Hold time and
+canvas size are `HOLD_MS` and `sizeDesk()` in `script.js`.
+
 ## Editing content
 - **Links:** swap the placeholder `href`s in `index.html`.
 - **Art images:** in the art card, replace each `<span class="ph"></span>` with

@@ -85,11 +85,43 @@ p:last-child { margin-bottom: 0; }
   top: 0;
   left: 0;
   opacity: 0;
-  transition: opacity .35s ease, box-shadow .15s ease;
+  transition: opacity .35s ease, box-shadow .15s ease, transform .12s ease;
 }
 .desk.is-ready .card { opacity: 1; }
 
 .card.is-dragging { box-shadow: 5px 5px 0 var(--ink); }
+/* picked up with a press-and-hold on a touch screen */
+.card.is-lifted { transform: scale(1.02); box-shadow: 7px 7px 0 var(--ink); }
+
+/* Touch screens: holding a box picks it up, so no text selection or
+   link-preview / "copy" menus on long press. */
+@media (hover: none) {
+  .desk.is-live .card,
+  .desk.is-live .card a {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+}
+
+/* Phones: the canvas is a full-screen scroll area, bigger than the screen, that
+   you swipe around (both directions, normal momentum). The page itself stays
+   screen-sized so the corner bits stay in their corners. */
+@media (max-width: 640px) {
+  body.is-live .canvas {
+    position: fixed;
+    inset: 0;
+    overflow: auto;
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  /* dots travel with the canvas */
+  body.is-live .desk {
+    background-color: var(--bg);
+    background-image: radial-gradient(var(--dot) 1px, transparent 1.2px);
+    background-size: 20px 20px;
+  }
+}
 
 .card__bar {
   display: flex;
@@ -269,9 +301,10 @@ body.is-grabbing, body.is-grabbing * { cursor: grabbing !important; }
   top: 0;
   left: 0;
   cursor: grab;
-  touch-action: none;
+  transition: transform .12s ease;
 }
 .art__img.is-dragging { box-shadow: 4px 4px 0 var(--ink); }
+.art__img.is-lifted { transform: scale(1.04); }
 
 .art__img .ph,
 .art__img img {
@@ -295,7 +328,7 @@ body.is-grabbing, body.is-grabbing * { cursor: grabbing !important; }
 /* ---------- corners: NYC time + weather (left), hint + theme toggle (right) ---------- */
 .corner { display: none; }
 
-.desk.is-live ~ .corner {
+body.is-live .corner {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -344,7 +377,7 @@ body.is-grabbing, body.is-grabbing * { cursor: grabbing !important; }
 
 /* phones: the hint gets its own line above the toggle so nothing collides */
 @media (max-width: 640px) {
-  .desk.is-live ~ .corner--right {
+  body.is-live .corner--right {
     flex-direction: column;
     align-items: flex-end;
     gap: 6px;

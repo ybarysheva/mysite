@@ -24,6 +24,8 @@
     Content order here = reading order for keyboard / screen readers.
     Positions are shuffled fresh on every page load.
   -->
+  <!-- On phones, .canvas is a full-screen scroll area bigger than the screen (swipe around it). -->
+  <div id="canvas" class="canvas">
   <main id="desk" class="desk">
 
     <!-- ABOUT -->
@@ -126,6 +128,7 @@
     </article>
 
   </main>
+  </div>
 
   <!-- bottom-left: Yana's time + weather in New York (filled in by script.js) -->
   <div class="corner corner--left">
@@ -136,7 +139,7 @@
   <div class="corner corner--right">
     <p class="hint" aria-hidden="true">
       <span class="hint--mouse">drag things around</span>
-      <span class="hint--touch">drag cards by their top bar</span>
+      <span class="hint--touch">swipe to look around · hold a box to move it</span>
     </p>
     <button type="button" class="theme-toggle" aria-label="switch to light mode" title="switch to light mode">
       <svg class="icon-sun" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">

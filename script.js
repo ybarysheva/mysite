@@ -55,12 +55,22 @@
     };
   }
 
+  /* Phones get a canvas about two screens wide that you swipe around;
+     desktop's canvas is just the window. */
+  const viewportWidth = () => document.documentElement.clientWidth;
+  const isPhone = () => viewportWidth() < 640;
+  function sizeDesk() {
+    desk.style.width = isPhone() ? Math.max(viewportWidth() * 2, 760) + "px" : "";
+  }
+
   /* ---------- layout: curated random ----------
      Cards land randomly, but each one tries a bunch of spots and keeps one
      that only overlaps others a little. The about card is never covered and
-     always lands in the first screenful. */
+     always lands in the first screenful (on phones: the first screen you see). */
   function scatter() {
+    sizeDesk();
     const W = desk.clientWidth;
+    const VW = viewportWidth();
     const VH = window.innerHeight;
     const boxes = new Map(
       cards.map((c) => {
@@ -72,8 +82,6 @@
 
     const about = cards.find((c) => c.dataset.card === "about");
     const order = [about, ...shuffled(cards.filter((c) => c !== about))].filter(Boolean);
-
-    if (W < 640) return scatterColumn(boxes, order);
 
     const H = Math.max(VH, Math.ceil(totalArea / (W * 0.55)) + BOTTOM);
     desk.style.height = H + "px";
@@ -89,7 +97,7 @@
       let bestScore = Infinity;
 
       for (let i = 0; i < 120; i++) {
-        const x = clamp(rand(PAD, maxX), PAD, maxX);
+        const x = clamp(card === about ? rand(PAD, Math.min(maxX, VW - s.w - PAD)) : rand(PAD, maxX), PAD, maxX);
         const y = clamp(card === about ? rand(PAD, Math.min(maxY, VH * 0.45)) : rand(PAD, maxY), PAD, maxY);
 
         const r = { x, y, w: s.w, h: s.h };
@@ -114,20 +122,6 @@
     if (about) toFront(about);
   }
 
-  /* Phones: a shuffled column with sideways jitter. Each card tucks slightly
-     under the next so every top bar (the touch drag handle) stays visible. */
-  function scatterColumn(boxes, order) {
-    const W = desk.clientWidth;
-    let y = PAD + rand(0, 16);
-    for (const card of order) {
-      const s = boxes.get(card);
-      place(card, rand(PAD, Math.max(PAD, W - s.w - PAD)), y + s.top);
-      toFront(card);
-      y += s.h + rand(-10, 28);
-    }
-    desk.style.height = Math.max(window.innerHeight, y + BOTTOM) + "px";
-  }
-
   /* ---------- art pile ---------- */
   function scatterArt(pile) {
     const imgs = shuffled(pile.querySelectorAll(".art__img"));
@@ -140,48 +134,115 @@
     pile.dataset.z = imgs.length;
   }
 
-  /* ---------- dragging ---------- */
-  function makeDraggable(el, { touchHandle, bounds, onFront, onMoveStart }) {
-    el.addEventListener("pointerdown", (e) => {
-      if (e.button !== 0) return;
-      if (e.target.closest("a, button")) return;
-      // On touch, cards only drag from their top bar so the page can still scroll.
-      if (e.pointerType !== "mouse" && touchHandle && !e.target.closest(touchHandle)) return;
+  /* ---------- dragging ----------
+     Mouse: drag a box from anywhere (links still click).
+     Touch: swiping moves around the canvas. To move a box, either drag its top
+     bar, or press and hold anywhere on it (~0.4s) until it lifts. */
+  const HOLD_MS = 400; // how long to hold before a box lifts
+  const SLOP = 8;      // finger can wobble this much (px) and still count as holding
+  let holding = false; // a touch is waiting to become a hold
+  let lifted = false;  // a box is being moved by touch: don't scroll the page
+  let swallowClick = false;
 
-      e.preventDefault();
-      e.stopPropagation();
-      onFront();
+  // While a box is lifted, stop the page from scrolling under the finger.
+  document.addEventListener("touchmove", (e) => { if (lifted) e.preventDefault(); }, { passive: false });
+  // No long-press menus / link previews while holding a box.
+  document.addEventListener("contextmenu", (e) => { if (holding || lifted) e.preventDefault(); });
+  // A hold that started on a link shouldn't open the link when you let go.
+  document.addEventListener("click", (e) => {
+    if (!swallowClick) return;
+    swallowClick = false;
+    e.preventDefault();
+    e.stopPropagation();
+  }, true);
 
-      const start = { x: e.clientX, y: e.clientY };
+  function makeDraggable(el, { handle, bounds, onFront, onMoveStart }) {
+    function drag(startEvent, { liftedByHold = false } = {}) {
+      const start = { x: startEvent.clientX, y: startEvent.clientY };
       const origin = { ...pos.get(el) };
       let moved = false;
-      el.setPointerCapture(e.pointerId);
+      const begin = () => {
+        moved = true;
+        el.classList.add("is-dragging");
+        document.body.classList.add("is-grabbing");
+        onMoveStart && onMoveStart();
+      };
+      if (liftedByHold) {
+        lifted = true;
+        el.classList.add("is-lifted");
+        begin();
+      }
+      try { el.setPointerCapture(startEvent.pointerId); } catch (_) {}
 
       const move = (ev) => {
+        if (ev.pointerId !== startEvent.pointerId) return;
         const dx = ev.clientX - start.x;
         const dy = ev.clientY - start.y;
         if (!moved) {
           if (Math.hypot(dx, dy) < 3) return;
-          moved = true;
-          el.classList.add("is-dragging");
-          document.body.classList.add("is-grabbing");
-          onMoveStart && onMoveStart();
+          begin();
         }
         const b = bounds();
         place(el, clamp(origin.x + dx, b.minX || 0, b.maxX), clamp(origin.y + dy, b.minY || 0, b.maxY));
       };
 
-      const end = () => {
+      const end = (ev) => {
+        if (ev.pointerId !== startEvent.pointerId) return;
         el.removeEventListener("pointermove", move);
         el.removeEventListener("pointerup", end);
         el.removeEventListener("pointercancel", end);
-        el.classList.remove("is-dragging");
+        el.classList.remove("is-dragging", "is-lifted");
         document.body.classList.remove("is-grabbing");
+        if (liftedByHold) {
+          lifted = false;
+          swallowClick = true;
+          setTimeout(() => (swallowClick = false), 400); // in case no click follows
+        }
       };
 
       el.addEventListener("pointermove", move);
       el.addEventListener("pointerup", end);
       el.addEventListener("pointercancel", end);
+    }
+
+    el.addEventListener("pointerdown", (e) => {
+      if (e.button !== 0) return;
+      const touch = e.pointerType !== "mouse";
+      if (e.target.closest(touch ? "button" : "a, button")) return;
+      e.stopPropagation(); // the innermost draggable wins (an art image, not its card)
+
+      // Mouse, or touch on the top bar: drag right away.
+      if (!touch || (handle && e.target.closest(handle))) {
+        e.preventDefault();
+        onFront();
+        drag(e);
+        return;
+      }
+
+      // Touch anywhere else: a swipe scrolls the canvas; holding still lifts the box.
+      const id = e.pointerId;
+      const sx = e.clientX;
+      const sy = e.clientY;
+      holding = true;
+      const stopWaiting = () => {
+        clearTimeout(timer);
+        holding = false;
+        el.removeEventListener("pointermove", wobble);
+        el.removeEventListener("pointerup", stopWaiting);
+        el.removeEventListener("pointercancel", stopWaiting); // fires when the page starts scrolling
+      };
+      const wobble = (ev) => {
+        if (ev.pointerId === id && Math.hypot(ev.clientX - sx, ev.clientY - sy) > SLOP) stopWaiting();
+      };
+      const timer = setTimeout(() => {
+        stopWaiting();
+        onFront();
+        if (navigator.vibrate) navigator.vibrate(10);
+        drag({ clientX: sx, clientY: sy, pointerId: id }, { liftedByHold: true });
+      }, HOLD_MS);
+      el.addEventListener("pointermove", wobble);
+      el.addEventListener("pointerup", stopWaiting);
+      el.addEventListener("pointercancel", stopWaiting);
     });
   }
 
@@ -191,7 +252,7 @@
 
   cards.forEach((card) => {
     makeDraggable(card, {
-      touchHandle: ".card__bar",
+      handle: ".card__bar",
       onFront: () => toFront(card),
       onMoveStart: hideHint,
       bounds: () => {
@@ -228,6 +289,7 @@
      it would otherwise hang off the right edge, and slides back to its spot
      when there's room again. */
   function keepInView() {
+    sizeDesk(); // e.g. a phone rotating past the phone/desktop width
     for (const card of cards) {
       const h = home.get(card);
       if (!h) continue;
@@ -250,10 +312,16 @@
 
   /* ---------- go ---------- */
   desk.classList.add("is-live");
+  document.body.classList.add("is-live");
+  // Always open at the top-left of the canvas (where the about card is), even on reload.
+  if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+  const canvas = document.getElementById("canvas");
 
   const init = () => {
     piles.forEach(scatterArt);
     scatter();
+    window.scrollTo(0, 0);
+    if (canvas) canvas.scrollTo(0, 0);
 
     // fade cards in one by one
     if (!reduceMotion) {
