@@ -11,7 +11,7 @@
 @property --bg     { syntax: "<color>"; inherits: true; initial-value: #111111; }
 @property --card   { syntax: "<color>"; inherits: true; initial-value: #191919; }
 @property --ink    { syntax: "<color>"; inherits: true; initial-value: #ececec; }
-@property --muted  { syntax: "<color>"; inherits: true; initial-value: #8a8a8a; }
+@property --muted  { syntax: "<color>"; inherits: true; initial-value: #a3a3a3; }
 @property --rule   { syntax: "<color>"; inherits: true; initial-value: #2c2c2c; }
 @property --dot    { syntax: "<color>"; inherits: true; initial-value: rgba(255, 255, 255, .09); }
 @property --sky-top    { syntax: "<color>"; inherits: true; initial-value: #111111; }
@@ -30,7 +30,7 @@
   --bg: #f5f5f2;
   --card: #ffffff;
   --ink: #111111;
-  --muted: #777777;
+  --muted: #5f5f5f;   /* ≥ 5.4:1 on white, the page and the sky (WCAG AA) */
   --rule: #e2e2dd;
   --dot: rgba(0, 0, 0, .1);       /* see-through, so it vanishes over the moon */
   --sky-top: #f5f5f2;
@@ -42,7 +42,7 @@
   --bg: #111111;
   --card: #191919;
   --ink: #ececec;
-  --muted: #8a8a8a;
+  --muted: #a3a3a3;   /* ≥ 6.5:1 on cards and the night sky (WCAG AA) */
   --rule: #2c2c2c;
   --dot: rgba(255, 255, 255, .09);
   --sky-top: #111111;
@@ -405,7 +405,7 @@ body.is-live .corner {
 .local {
   padding: 1px 6px;
   margin-left: -6px;
-  background: color-mix(in srgb, var(--bg) 70%, transparent);
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
   -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
   white-space: nowrap;
@@ -414,6 +414,11 @@ body.is-live .corner {
 
 .hint {
   margin: 0;
+  padding: 1px 6px;
+  margin-right: -6px;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
   pointer-events: none;
   transition: opacity .4s ease;
 }
@@ -422,13 +427,6 @@ body.is-live .corner {
 /* phones: the hint sits one line up so it never collides with the time/weather */
 @media (max-width: 640px) {
   body.is-live .corner--right { bottom: 40px; }
-  .hint {
-    padding: 1px 6px;
-    margin-right: -6px;
-    background: color-mix(in srgb, var(--bg) 70%, transparent);
-    -webkit-backdrop-filter: blur(4px);
-    backdrop-filter: blur(4px);
-  }
 }
 .hint--touch { display: none; }
 @media (hover: none) {
