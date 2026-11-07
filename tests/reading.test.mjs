@@ -28,3 +28,12 @@ test("reads Yana's currently-reading shelf and returns every book", async () => 
 test("empty shelf → no books", () => {
   assert.deepEqual(parseFeed("<rss><channel></channel></rss>"), []);
 });
+
+test("reads the shelf page when the feed needs a key", async () => {
+  const { parseShelfPage } = await import("../api/reading.js");
+  const html = `<table><tr id="review_1" class="bookalike review">
+    <td class="field cover"><div class="value"><a href="/book/show/153747.Moby_Dick"><img alt="Moby-Dick" src="https://i.gr-assets.com/images/S/x/1._SY75_.jpg"></a></div></td>
+    <td class="field title"><div class="value"><a title="Moby-Dick or, The Whale" href="/book/show/153747.Moby_Dick">Moby-Dick or, The Whale</a></div></td>
+    <td class="field author"><div class="value"><a href="/author/show/1624.Herman_Melville">Melville, Herman</a></div></td></tr></table>`;
+  assert.deepEqual(parseShelfPage(html), [{ title: "Moby-Dick or, The Whale", author: "Herman Melville", image: "https://i.gr-assets.com/images/S/x/1._SY160_.jpg", url: "https://www.goodreads.com/book/show/153747.Moby_Dick" }]);
+});

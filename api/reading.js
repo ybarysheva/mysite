@@ -37,14 +37,40 @@ async function findUserId() {
   return userId;
 }
 
+// The RSS feed needs a private key now, so read the (public) shelf page itself.
+export function parseShelfPage(html) {
+  const rows = html.match(/<tr[^>]*id="review_\d+"[\s\S]*?<\/tr>/g) || [];
+  return rows.map((row) => {
+    const title = row.match(/<td class="field title">[\s\S]*?<a[^>]*title="([^"]+)"[^>]*href="([^"]+)"/) ||
+      row.match(/<td class="field title">[\s\S]*?<a[^>]*href="([^"]+)"[^>]*title="([^"]+)"/);
+    if (!title) return null;
+    const [t, href] = title[0].includes('title="' + title[1]) ? [title[1], title[2]] : [title[2], title[1]];
+    const au = (row.match(/<td class="field author">[\s\S]*?<a[^>]*>([^<]+)<\/a>/) || [])[1] || "";
+    const img = (row.match(/<td class="field cover">[\s\S]*?<img[^>]*src="([^"]+)"/) || [])[1] || null;
+    const [last, first] = decode(au).split(/,\s*/);
+    return {
+      title: decode(t).replace(/\s+/g, " ").trim(),
+      author: first ? `${first} ${last}` : last || "",
+      image: img ? img.replace(/\._S[XY]\d+_/, "._SY160_") : null,
+      url: href.startsWith("http") ? href : "https://www.goodreads.com" + href,
+    };
+  }).filter(Boolean);
+}
+
 export async function GET() {
   try {
     const id = await findUserId();
     if (!id) return json({ books: [], error: "no goodreads user" }, 502, "no-store");
-    const res = await fetch(`https://www.goodreads.com/review/list_rss/${id}?shelf=currently-reading`, { headers: { "User-Agent": "Mozilla/5.0" } });
-    if (!res.ok) return json({ books: [], error: `goodreads ${res.status}` }, 502, "no-store");
-    const books = parseFeed(await res.text()).slice(0, 6);
-    return json({ books });
+    const headers = { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15" };
+    let books = [];
+    const rss = await fetch(`https://www.goodreads.com/review/list_rss/${id}?shelf=currently-reading`, { headers });
+    if (rss.ok) books = parseFeed(await rss.text());
+    if (!books.length) {
+      const page = await fetch(`https://www.goodreads.com/review/list/${id}?shelf=currently-reading&per_page=20`, { headers });
+      if (!page.ok) return json({ books: [], error: `goodreads ${page.status}` }, 502, "no-store");
+      books = parseShelfPage(await page.text());
+    }
+    return json({ books: books.slice(0, 6) });
   } catch (err) {
     return json({ books: [], error: String(err.message || err) }, 502, "no-store");
   }
