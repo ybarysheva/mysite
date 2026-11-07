@@ -4,6 +4,8 @@ Personal site: draggable cards scattered on a page, shuffled fresh on every visi
 
 Plain HTML/CSS/JS, no build step.
 
+Ideas that are planned but not built yet live in [`IDEAS.md`](IDEAS.md).
+
 - `index.html`: all the content. Each `<article class="card">` is one box.
 - `styles.css`: look and feel. Colors and font are at the top.
 - `script.js`: random layout + dragging.
