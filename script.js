@@ -54,8 +54,8 @@
   }
   // a main box comes forward with its whole cluster (small boxes on top)
   function clusterToFront(card) {
-    toFront(card);
     kidsOf(card).forEach(toFront);
+    toFront(card); // the main box stays on top of its own small boxes
   }
 
   /* ---------- folding (desktop) ----------
@@ -87,6 +87,7 @@
         // which way to nudge it on hover (toward the side it opens to)
         node.style.setProperty("--peek-x", (Math.cos(dir) * 7).toFixed(1) + "px");
         node.style.setProperty("--peek-y", (Math.sin(dir) * 7).toFixed(1) + "px");
+        node.style.setProperty("--tilt", ((i % 2 ? -1 : 1) * (2.5 + (i % 3) * 1.2)).toFixed(1) + "deg");
         node.inert = folded;
         if (folded) {
           // tucked behind, peeking out past the main box's edges: fanned around the side it
@@ -98,7 +99,7 @@
           node.style.zIndex = (parseInt(card.style.zIndex, 10) || 10) - 1 - i;
         } else if (o) {
           place(node, clamp(m.x + o.dx, 0, desk.clientWidth - s.w), clamp(m.y + o.dy, 0, desk.clientHeight - s.h), { remember: false });
-          node.style.zIndex = ++z;
+          node.style.zIndex = (parseInt(card.style.zIndex, 10) || 10) - 1 - i;
         }
       });
       if (foldable() && !alwaysOpen(card)) {
@@ -553,8 +554,8 @@
     });
   });
   nodes.forEach((node) => {
-    makeDraggable(node, { onFront: () => toFront(node), onDrop: () => remember(node) });
-    node.addEventListener("focusin", () => toFront(node));
+    makeDraggable(node, { onFront: () => clusterToFront(parentOf(node)), onDrop: () => remember(node) });
+    node.addEventListener("focusin", () => clusterToFront(parentOf(node)));
   });
 
   /* Resizing never reshuffles. Everything stays put; a box only slides in if

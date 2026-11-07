@@ -520,7 +520,7 @@ body.is-live .corner {
 /* ---------- folding (desktop): small boxes tucked behind their main box ---------- */
 .node.is-folded { pointer-events: none; }
 .node.is-folded .clef { visibility: hidden; }
-.desk.is-unfolding .node { transition: left .45s cubic-bezier(.2, .8, .2, 1), top .45s cubic-bezier(.2, .8, .2, 1), opacity .35s ease; }
+.desk.is-unfolding .node { transition: left .45s cubic-bezier(.2, .8, .2, 1), top .45s cubic-bezier(.2, .8, .2, 1), transform .45s ease, opacity .35s ease; }
 .desk.is-unfolding .wires { opacity: 0; transition: none; }
 .card[role="button"] { cursor: pointer; }
 .card[role="button"] .card__body { cursor: pointer; }
@@ -529,11 +529,11 @@ body.is-live .corner {
 .node.is-folded::after { visibility: hidden; }
 .node--art.is-folded { background: var(--card); }
 .node.is-folded { transition: transform .2s ease, opacity .35s ease; }
-.node.is-folded.is-peeking { transform: translate(var(--peek-x, 0), var(--peek-y, 0)); }
-/* tucked boxes: shaded (hatched) cards with a hairline edge, like the sketch */
+.node.is-folded.is-peeking { transform: translate(var(--peek-x, 0), var(--peek-y, 0)) rotate(var(--tilt, 0deg)); }
+/* tucked boxes: outlined cards, slightly tilted, peeking out from behind (like the sketch) */
 .node.is-folded {
   border: 0.5px solid var(--ink);
-  background:
-    repeating-linear-gradient(45deg, color-mix(in srgb, var(--ink) 30%, transparent) 0 1px, transparent 1px 5px),
-    var(--card);
+  background: var(--card);
+  transform: rotate(var(--tilt, 0deg));
 }
+.node.is-folded { color: transparent; } /* hide bare text inside tucked boxes too */
