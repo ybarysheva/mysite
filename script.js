@@ -732,12 +732,33 @@
     }
   }
 
+  /* ---------- currently reading (Goodreads, via /api/reading) ---------- */
+  const reading = document.querySelector(".reading");
+  async function loadReading() {
+    if (!reading) return;
+    try {
+      const res = await fetch("/api/reading");
+      if (!res.ok) return;
+      const { book } = await res.json();
+      if (!book || !book.title) return;
+      reading.querySelector(".reading__title").textContent = book.title;
+      reading.querySelector(".reading__author").textContent = book.author || "";
+      reading.querySelector(".listening__track").href = book.url || "#";
+      const cover = reading.querySelector(".reading__cover");
+      if (book.image) cover.src = book.image;
+      reading.hidden = false;
+      placeLate(reading);
+    } catch (_) {
+      /* not deployed / Goodreads didn't answer: stay hidden */
+    }
+  }
+
   // Refresh every minute while the tab is visible.
   setInterval(() => document.visibilityState === "visible" && loadListening(), 60000);
 
   // Wait for the font (and briefly for the song) so card sizes are measured
   // correctly before laying out.
   const fontsReady = document.fonts ? document.fonts.ready : Promise.resolve();
-  const songOrTimeout = Promise.race([loadListening(), new Promise((r) => setTimeout(r, 1200))]);
+  const songOrTimeout = Promise.race([Promise.all([loadListening(), loadReading()]), new Promise((r) => setTimeout(r, 1200))]);
   Promise.all([fontsReady, songOrTimeout]).then(init, init);
 })();
