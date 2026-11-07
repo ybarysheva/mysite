@@ -13,14 +13,16 @@
 @property --ink    { syntax: "<color>"; inherits: true; initial-value: #ececec; }
 @property --muted  { syntax: "<color>"; inherits: true; initial-value: #8a8a8a; }
 @property --rule   { syntax: "<color>"; inherits: true; initial-value: #2c2c2c; }
-@property --dot    { syntax: "<color>"; inherits: true; initial-value: #2a2a2a; }
+@property --dot    { syntax: "<color>"; inherits: true; initial-value: rgba(255, 255, 255, .09); }
 @property --sky-top    { syntax: "<color>"; inherits: true; initial-value: #111111; }
 @property --sky-bottom { syntax: "<color>"; inherits: true; initial-value: #111111; }
+@property --stars { syntax: "<number>"; inherits: true; initial-value: 0; }
+@property --moon  { syntax: "<number>"; inherits: true; initial-value: 0; }
 
 :root.sky-ready {
   transition:
     --bg 3s ease, --card 3s ease, --ink 3s ease, --muted 3s ease, --rule 3s ease, --dot 3s ease,
-    --sky-top 60s linear, --sky-bottom 60s linear;
+    --sky-top 60s linear, --sky-bottom 60s linear, --stars 60s linear, --moon 60s linear;
 }
 
 :root,
@@ -30,7 +32,7 @@
   --ink: #111111;
   --muted: #777777;
   --rule: #e2e2dd;
-  --dot: #d6d6d1;
+  --dot: rgba(0, 0, 0, .1);       /* see-through, so it vanishes over the moon */
   --sky-top: #f5f5f2;
   --sky-bottom: #f5f5f2;
   color-scheme: light;
@@ -42,7 +44,7 @@
   --ink: #ececec;
   --muted: #8a8a8a;
   --rule: #2c2c2c;
-  --dot: #2a2a2a;
+  --dot: rgba(255, 255, 255, .09);
   --sky-top: #111111;
   --sky-bottom: #111111;
   color-scheme: dark;
@@ -67,7 +69,35 @@ body {
   z-index: -1;
   background: linear-gradient(to bottom, var(--sky-top), var(--sky-bottom));
   pointer-events: none;
+  overflow: hidden;
 }
+
+/* night: a sparse star field (sky.js) that fades in as it gets dark; clouds hide it */
+.stars { position: absolute; inset: 0; opacity: var(--stars, 0); }
+.stars i {
+  position: absolute;
+  border-radius: 50%;
+  background: #f4f1e6;
+  opacity: var(--o);
+  animation: twinkle 5s ease-in-out infinite alternate;
+}
+@keyframes twinkle { to { opacity: calc(var(--o) * 0.25); } }
+
+/* the real moon: actual phase, shown only while it's up over New York */
+.moon {
+  position: absolute;
+  left: var(--moon-x, 80%);
+  top: var(--moon-y, 15%);
+  width: 46px;
+  height: 46px;
+  transform: translate(-50%, -50%);
+  opacity: var(--moon, 0);
+  filter: drop-shadow(0 0 14px rgba(244, 238, 220, .25));
+}
+.moon__dark { fill: rgba(244, 241, 230, .07); }  /* the faint unlit side */
+.moon__lit  { fill: #ebe7d9; }
+@media (max-width: 640px) { .moon { width: 34px; height: 34px; } }
+@media (prefers-reduced-motion: reduce) { .stars i { animation: none; } }
 
 a { color: inherit; }
 p { margin: 0 0 .8em; }

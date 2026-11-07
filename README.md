@@ -51,10 +51,12 @@ it opens the mail app instead.
 
 ## NY sky background (light by day, dark at night)
 `sky.js` works out where the sun is in New York right now and sets the colors to match:
-pale blue at midday, peach/pink near the bottom around sunrise and sunset, a dim rust/plum glow
-at dusk and dawn, near-black navy at night. The whole site is light while the sun is up and
+pale blue at midday, peach/pink near the bottom around sunrise and sunset, a dim blue "blue hour"
+at dusk and dawn, deep navy at night with a sparse field of faint stars. The real moon shows too:
+its actual phase, and only while it's actually up over New York, roughly where it is in the sky
+(east on the left, west on the right). The whole site is light while the sun is up and
 dark at night (it switches when the sun is ~4° below the horizon, cross-fading over a few seconds).
-Clouds from the weather lookup pull the colors toward grey. It recalculates every minute, so the
+Clouds from the weather lookup turn the sky grey and hide the stars (and dim the moon). It recalculates every minute, so the
 change is too slow to notice. No light/dark button: the sky decides.
 - Colors: the `DAY` / `NIGHT` tables at the top of `sky.js` (by sun height, morning vs evening).
 - Without JavaScript the site is simply dark.
