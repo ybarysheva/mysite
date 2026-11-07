@@ -273,9 +273,30 @@ body.is-grabbing, body.is-grabbing * { cursor: grabbing !important; }
 .node.is-dragging { box-shadow: 4px 4px 0 var(--soft); }
 .node.is-lifted { transform: scale(1.04); box-shadow: 5px 5px 0 var(--soft); }
 
-/* plain links: "portfolio →" */
-.node--link::after { content: " →"; }
-.node--link.is-copied::after { content: ""; }
+/* Every link box gets the same small ↗ "opens a link" icon in its top-right corner. */
+.node { position: relative; }
+.node--link,
+.node--project,
+.node--piece,
+.node--listening { padding-right: 24px; }
+.node--link::after,
+.node--project::after,
+.node--piece::after,
+.node--listening::after {
+  content: "";
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 10px;
+  height: 10px;
+  background: currentColor;
+  -webkit-mask: var(--out-icon) center / contain no-repeat;
+  mask: var(--out-icon) center / contain no-repeat;
+}
+.node--link.is-copied::after { content: none; }
+:root {
+  --out-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M5 2H2v8h8V7M7 2h3v3M10 2 5.5 6.5' fill='none' stroke='black' stroke-width='1.3'/%3E%3C/svg%3E");
+}
 .node--link:hover,
 .node--project:hover .pname {
   background: var(--ink);
@@ -295,19 +316,13 @@ body.is-grabbing, body.is-grabbing * { cursor: grabbing !important; }
 
 /* side projects */
 .node--project {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: center;
-  gap: 10px;
+  display: block;
   width: 250px;
   padding: 8px 10px;
 }
 /* a piece of writing: title + one sentence */
 .node--piece {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: center;
-  gap: 10px;
+  display: block;
   width: 250px;
   padding: 8px 10px;
 }
@@ -327,10 +342,10 @@ body.is-grabbing, body.is-grabbing * { cursor: grabbing !important; }
 }
 .pdesc { display: block; margin-top: 4px; } /* a little space under the title */ /* same size and color as the rest of the box's text */
 
-/* art pieces: just the image (no frame), with the ↗ beside it at the bottom */
+/* art pieces: just the image (no frame), with the ↗ beside it at the top */
 .node--art {
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 4px;
   padding: 0;
   border: 0;
