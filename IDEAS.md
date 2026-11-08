@@ -40,11 +40,25 @@ Four bass strings come down over the site and you can play them.
 
 ## 2. Weird-question box (answers emailed to Yana)
 
-- A card with a rotating weird question ("if you were stuck doing only one thing for the rest of
-  your life, what would it be?" etc.) and a box to answer.
-- Answers go to Yana's email through a free form service, no database.
-  **Web3Forms** suggested: she enters her email on their site, gets a key (~2 min, no account).
-- Waiting on: Yana getting the key.
+- Its own main box ("say hi"), always open (not foldable), with a rotating weird question each visit
+  ("if you were stuck doing only one thing for the rest of your life, what would it be?" etc.),
+  an answer box, and an optional "name or email (if you want a reply)" line.
+- Answers go to Yana's email through a free form service, no database. Options:
+  - **FormSubmit** (recommended): no account, no key; the first answer sends Yana one "confirm"
+    email to click, then everything lands in her inbox. Keep her address hidden in the page source.
+  - **Web3Forms**: she gets a key on their site (~2 min).
+  - mailto fallback: opens the visitor's mail app (zero setup, clunky).
+- Waiting on: Yana saying go.
+
+## 2b. Clown mode 🤡
+
+- Hidden toggle (a tiny 🤡 somewhere, or typing "clown"); click again to restore dignity.
+- Flavors to pick from:
+  - **Everything goes silly**: boxes wobble and tilt, font turns Comic-ish, colors go primary,
+    a honk on every click.
+  - **Clown car**: boxes keep spilling out of one box, way more than could fit, bouncing around.
+  - **Red noses**: little red noses on every image and on her name; cursor becomes a honking nose.
+- Waiting on: which flavor (or a mix).
 
 ## 3. Stamps
 
@@ -58,9 +72,20 @@ Four bass strings come down over the site and you can play them.
 
 ---
 
+## Quick content to-dos (links still placeholders)
+- LinkedIn, 2025 portfolio, Substack
+- Send-a-cat, Supermarket Layer, Bass Transcriber (example.com right now)
+- The exact More Than Borsch page on kurochkagifts.com (goes to the shop homepage now)
+- Instagram post link for each of the 4 art pieces (all point to the profile now)
+- The animation piece (needs the video/GIF file)
+
+---
+
 ## Done
 - **Spotify "listening now"**: live on the about card (direct Spotify API; setup page removed;
   how to redo it is in the README).
+- **Goodreads "currently reading"**: lists every book on the shelf (reads the public page / widget;
+  `?debug=1` on /api/reading shows what Goodreads returned).
 
 ## Dropped (for the record)
 - **Live chat / inbox app**: built, then removed. Yana didn't want to share her Upstash Redis
