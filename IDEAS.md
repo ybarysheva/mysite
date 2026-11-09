@@ -69,6 +69,10 @@ Four bass strings come down over the site and you can play them.
 
 - Not a straightforward card: something hidden/discoverable (e.g. found by double-tapping empty
   space or a tiny cat somewhere).
+- **Little cat:** like the one at the bottom of her current portfolio (yanabarysheva.com/portfolio).
+  She'll send the image, or draw a small line cat in the site's style. Spots discussed: sitting on /
+  peeking over a box (moves with it), bottom corner by the time/weather (blinks or stretches now and
+  then), or as the doorway to "cats I've known + loved".
 
 ---
 
