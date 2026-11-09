@@ -1,29 +1,28 @@
-/* ---------- tokens ----------
-   The site follows the sky in New York (sky.js): light while the sun is up, dark at
-   night, with a soft sky-colored gradient behind everything (--sky-top / --sky-bottom).
-   Without JavaScript it's simply dark. */
+/* =========================================================================
+   Tokens
+   The site follows the sky in New York (js/sky.js): light while the sun is
+   up, dark at night, with a soft sky gradient behind everything.
+   Without JavaScript it's simply dark.
+   ========================================================================= */
+
+/* Registered so they can cross-fade (light/dark switch at dusk and dawn, the
+   sky slowly drifting). Browsers without @property just switch instantly. */
+@property --bg         { syntax: "<color>";  inherits: true; initial-value: #111111; }
+@property --card       { syntax: "<color>";  inherits: true; initial-value: #191919; }
+@property --ink        { syntax: "<color>";  inherits: true; initial-value: #ececec; }
+@property --muted      { syntax: "<color>";  inherits: true; initial-value: #a3a3a3; }
+@property --dot        { syntax: "<color>";  inherits: true; initial-value: rgb(255 255 255 / .09); }
+@property --sky-top    { syntax: "<color>";  inherits: true; initial-value: #111111; }
+@property --sky-bottom { syntax: "<color>";  inherits: true; initial-value: #111111; }
+@property --stars      { syntax: "<number>"; inherits: true; initial-value: 0; }
+@property --moon       { syntax: "<number>"; inherits: true; initial-value: 0; }
+
 :root {
-  --edge: color-mix(in srgb, var(--ink) 55%, transparent); /* box outlines: a bit lighter than text */
   --font: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-}
-
-/* Registered as colors so they can cross-fade (the light/dark switch at dusk and dawn,
-   and the sky slowly drifting). Browsers that don't support this just switch instantly. */
-@property --bg     { syntax: "<color>"; inherits: true; initial-value: #111111; }
-@property --card   { syntax: "<color>"; inherits: true; initial-value: #191919; }
-@property --ink    { syntax: "<color>"; inherits: true; initial-value: #ececec; }
-@property --muted  { syntax: "<color>"; inherits: true; initial-value: #a3a3a3; }
-@property --rule   { syntax: "<color>"; inherits: true; initial-value: #2c2c2c; }
-@property --dot    { syntax: "<color>"; inherits: true; initial-value: rgba(255, 255, 255, .09); }
-@property --sky-top    { syntax: "<color>"; inherits: true; initial-value: #111111; }
-@property --sky-bottom { syntax: "<color>"; inherits: true; initial-value: #111111; }
-@property --stars { syntax: "<number>"; inherits: true; initial-value: 0; }
-@property --moon  { syntax: "<number>"; inherits: true; initial-value: 0; }
-
-:root.sky-ready {
-  transition:
-    --bg 3s ease, --card 3s ease, --ink 3s ease, --muted 3s ease, --rule 3s ease, --dot 3s ease,
-    --sky-top 60s linear, --sky-bottom 60s linear, --stars 60s linear, --moon 60s linear;
+  --edge: color-mix(in srgb, var(--ink) 55%, transparent);  /* box outlines */
+  --wire: color-mix(in srgb, var(--ink) 38%, transparent);  /* connecting lines */
+  --out-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M5 2H2v8h8V7M7 2h3v3M10 2 5.5 6.5' fill='none' stroke='black' stroke-width='1.3'/%3E%3C/svg%3E");
+  --ease-out: cubic-bezier(.2, .8, .2, 1);
 }
 
 :root,
@@ -31,9 +30,8 @@
   --bg: #f5f5f2;
   --card: color-mix(in srgb, #ffffff 80%, var(--sky-top)); /* tinted toward the sky */
   --ink: #111111;
-  --muted: #5f5f5f;   /* ≥ 5.4:1 on white, the page and the sky (WCAG AA) */
-  --rule: #e2e2dd;
-  --dot: rgba(0, 0, 0, .1);       /* see-through, so it vanishes over the moon */
+  --muted: #5f5f5f;                                         /* ≥ 5.4:1, WCAG AA */
+  --dot: rgb(0 0 0 / .1);                                   /* see-through: vanishes over the moon */
   --sky-top: #f5f5f2;
   --sky-bottom: #f5f5f2;
   color-scheme: light;
@@ -41,39 +39,52 @@
 
 :root[data-theme="dark"] {
   --bg: #111111;
-  --card: color-mix(in srgb, #191919 78%, var(--sky-top)); /* tinted toward the sky */
+  --card: color-mix(in srgb, #191919 78%, var(--sky-top));
   --ink: #ececec;
-  --muted: #a3a3a3;   /* ≥ 6.5:1 on cards and the night sky (WCAG AA) */
-  --rule: #2c2c2c;
-  --dot: rgba(255, 255, 255, .09);
+  --muted: #a3a3a3;                                         /* ≥ 6.5:1, WCAG AA */
+  --dot: rgb(255 255 255 / .09);
   --sky-top: #111111;
   --sky-bottom: #111111;
   color-scheme: dark;
 }
 
-/* ---------- base ---------- */
+:root.sky-ready {
+  transition:
+    --bg 3s ease, --card 3s ease, --ink 3s ease, --muted 3s ease, --dot 3s ease,
+    --sky-top 60s linear, --sky-bottom 60s linear, --stars 60s linear, --moon 60s linear;
+}
+
+/* =========================================================================
+   Base
+   ========================================================================= */
 *, *::before, *::after { box-sizing: border-box; }
-html, body { margin: 0; }
 
 body {
+  margin: 0;
   min-height: 100vh;
-  background-color: var(--bg);
+  background: var(--bg);
   color: var(--ink);
   font: 13px/1.6 var(--font);
   -webkit-font-smoothing: antialiased;
 }
 
-/* the NY sky, fixed behind everything */
+a { color: inherit; }
+p { margin: 0 0 .8em; }
+p:last-child { margin-bottom: 0; }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+/* =========================================================================
+   Sky (fixed behind everything): gradient, stars, the real moon
+   ========================================================================= */
 .sky {
   position: fixed;
   inset: 0;
   z-index: -1;
-  background: linear-gradient(to bottom, var(--sky-top), var(--sky-bottom));
-  pointer-events: none;
   overflow: hidden;
+  pointer-events: none;
+  background: linear-gradient(var(--sky-top), var(--sky-bottom));
 }
 
-/* night: a sparse star field (sky.js) that fades in as it gets dark; clouds hide it */
 .stars { position: absolute; inset: 0; opacity: var(--stars, 0); }
 .stars i {
   position: absolute;
@@ -82,44 +93,37 @@ body {
   opacity: var(--o);
   animation: twinkle 5s ease-in-out infinite alternate;
 }
-@keyframes twinkle { to { opacity: calc(var(--o) * 0.25); } }
+@keyframes twinkle { to { opacity: calc(var(--o) * .25); } }
 
-/* the real moon: actual phase, shown only while it's up over New York */
 .moon {
   position: absolute;
   left: var(--moon-x, 80%);
   top: var(--moon-y, 15%);
   width: 46px;
-  height: 46px;
-  transform: translate(-50%, -50%);
+  aspect-ratio: 1;
+  translate: -50% -50%;
   opacity: var(--moon, 0);
-  filter: drop-shadow(0 0 14px rgba(244, 238, 220, .25));
+  filter: drop-shadow(0 0 14px rgb(244 238 220 / .25));
 }
-.moon__dark { fill: rgba(244, 241, 230, .07); }  /* the faint unlit side */
+.moon__dark { fill: rgb(244 241 230 / .07); }
 .moon__lit  { fill: #ebe7d9; }
-@media (max-width: 640px) { .moon { width: 34px; height: 34px; } }
-@media (prefers-reduced-motion: reduce) { .stars i { animation: none; } }
 
-a { color: inherit; }
-p { margin: 0 0 .8em; }
-p:last-child { margin-bottom: 0; }
+/* =========================================================================
+   Desk: the canvas the boxes sit on
+   ========================================================================= */
 
-:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
-
-/* ---------- desk (the canvas) ---------- */
-
-/* No-JS fallback: cards simply wrap in a row */
+/* Without JS: boxes simply wrap. */
 .desk {
-  background-image: radial-gradient(var(--dot) 1px, transparent 1.2px);
-  background-size: 20px 20px;
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
   gap: 24px;
   padding: 24px;
+  background-image: radial-gradient(var(--dot) 1px, transparent 1.2px);
+  background-size: 20px 20px;
 }
 
-/* JS on: free positioning */
+/* With JS: js/layout.js positions everything. */
 .desk.is-live {
   display: block;
   position: relative;
@@ -127,251 +131,16 @@ p:last-child { margin-bottom: 0; }
   padding: 0;
   overflow: hidden;
 }
-
-/* ---------- cards ---------- */
-.card {
-  width: var(--w, 300px);
-  max-width: calc(100vw - 32px);
-  background: var(--card);
-  border: 0.5px solid var(--edge);
-}
-
-.card--about      { --w: 460px; }
-.card--work       { --w: 290px; }
-.card--projects   { --w: 330px; }
-.card--writing    { --w: 310px; }
-.card--art        { --w: 380px; }
-
-.desk.is-live .card {
+.desk.is-live :is(.card, .node) {
   position: absolute;
   top: 0;
   left: 0;
   opacity: 0;
-  transition: opacity .35s ease, box-shadow .15s ease, transform .12s ease;
+  transition: opacity .35s ease, transform .2s ease;
 }
-.desk.is-ready .card { opacity: 1; }
+.desk.is-ready :is(.card, .node) { opacity: 1; }
 
-.card.is-dragging { box-shadow: 5px 5px 0 var(--ink); }
-/* picked up with a press-and-hold on a touch screen */
-.card.is-lifted { transform: scale(1.02); box-shadow: 7px 7px 0 var(--ink); }
-
-/* Touch screens: holding a box picks it up, so no text selection or
-   link-preview / "copy" menus on long press. */
-@media (hover: none) {
-  .desk.is-live .card,
-  .desk.is-live .node,
-  .desk.is-live .node a {
-    -webkit-touch-callout: none;
-    -webkit-user-select: none;
-    user-select: none;
-  }
-}
-
-/* Phones: the canvas is a full-screen scroll area, bigger than the screen, that
-   you swipe around (both directions, normal momentum). The page itself stays
-   screen-sized so the corner bits stay in their corners. */
-@media (max-width: 640px) {
-  /* slimmer boxes so the phone stack can zig-zag left/right */
-  .card { max-width: 85vw; }
-
-  body.is-live .canvas {
-    position: fixed;
-    inset: 0;
-    overflow: auto;
-    overscroll-behavior: none;
-    -webkit-overflow-scrolling: touch;
-  }
-}
-
-.card__bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 5px 10px;
-  border-bottom: 0.5px solid var(--edge);
-  user-select: none;
-  -webkit-user-select: none;
-}
-.desk.is-live .card__bar {
-  cursor: grab;
-  touch-action: none; /* lets touch-drag the bar without scrolling the page */
-}
-
-.card__bar h2 {
-  margin: 0;
-  font-size: 11px;
-  font-weight: 400;
-  letter-spacing: .06em;
-}
-
-.grip {
-  width: 14px;
-  height: 8px;
-  background-image: radial-gradient(currentColor 1px, transparent 1.3px);
-  background-size: 4px 4px;
-  opacity: .5;
-}
-
-.card__body { padding: 12px 14px 14px; }
-
-@media (hover: hover) and (pointer: fine) {
-  .desk.is-live .card__body { cursor: grab; }
-}
-
-body.is-grabbing, body.is-grabbing * { cursor: grabbing !important; }
-
-/* ---------- about ---------- */
-.card--about .card__body {
-  padding: 20px 22px 22px;
-  font-size: 15px;
-}
-.name {
-  margin: 0 0 12px;
-  font-size: 44px;
-  line-height: 1.05;
-  font-weight: 700;
-  letter-spacing: -.03em;
-}
-@media (max-width: 640px) {
-  .name { font-size: 34px; }
-}
-
-/* ---------- work ---------- */
-.big {
-  font-size: 16px;
-  font-weight: 700;
-  margin-bottom: 6px;
-}
-
-/* ---------- small connected boxes (.node) ----------
-   Links and examples for each category, joined to their main box by straight lines. */
-.node {
-  /* softer outline than the main boxes, so the main box of each cluster reads first */
-  --soft: color-mix(in srgb, var(--ink) 38%, var(--card));
-  display: block;
-  width: max-content;
-  max-width: min(260px, 85vw);
-  margin: 0;
-  padding: 6px 10px;
-  color: var(--ink);
-  background: var(--card);
-  border: 0.5px solid var(--edge); /* same hairline as the main boxes */
-  font-size: 12px;
-  line-height: 1.5;
-  text-decoration: none;
-  -webkit-user-drag: none;
-}
-.node[hidden] { display: none; }
-.desk.is-live .node {
-  position: absolute;
-  top: 0;
-  left: 0;
-  opacity: 0;
-  cursor: grab;
-  transition: opacity .35s ease, box-shadow .15s ease, transform .12s ease;
-}
-.desk.is-ready .node { opacity: 1; }
-.node.is-dragging { box-shadow: 4px 4px 0 var(--soft); }
-.node.is-lifted { transform: scale(1.04); box-shadow: 5px 5px 0 var(--soft); }
-
-/* Every link box gets the same small ↗ "opens a link" icon in its top-right corner. */
-.node { position: relative; }
-.node--link,
-.node--project,
-.node--piece,
-.node--listening { padding-right: 24px; }
-.node--link::after,
-.node--project::after,
-.node--piece::after,
-.node--listening::after {
-  content: "";
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  width: 10px;
-  height: 10px;
-  background: currentColor;
-  -webkit-mask: var(--out-icon) center / contain no-repeat;
-  mask: var(--out-icon) center / contain no-repeat;
-}
-.node--link.is-copied::after { content: none; }
-:root {
-  --out-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M5 2H2v8h8V7M7 2h3v3M10 2 5.5 6.5' fill='none' stroke='black' stroke-width='1.3'/%3E%3C/svg%3E");
-}
-.node--link:hover,
-.node--project:hover .pname {
-  background: var(--ink);
-  color: var(--card);
-}
-
-/* a fact: "currently / ux designer @ OTI" */
-/* small labels: "currently", "listening now", art captions — one style everywhere */
-.node__label,
-.listening__label,
-.node--art figcaption {
-  font-size: 11px;
-  letter-spacing: .02em;
-  color: var(--muted);
-}
-.node__label { display: block; }
-
-/* side projects */
-.node--project {
-  display: block;
-  width: 250px;
-  padding: 8px 10px;
-}
-/* a piece of writing: title + one sentence */
-.node--piece {
-  display: block;
-  width: 250px;
-  padding: 8px 10px;
-}
-.node--piece:hover .pname { background: var(--ink); color: var(--card); }
-
-.thumb {
-  width: 40px;
-  height: 40px;
-  border: 1px solid var(--soft);
-  background: repeating-linear-gradient(45deg, var(--rule) 0 1px, transparent 1px 7px);
-}
-.pname {
-  display: inline-block;
-  font-weight: 700;
-  padding: 0 2px;
-  margin-left: -2px;
-}
-.pdesc { display: block; margin-top: 4px; } /* a little space under the title */ /* same size and color as the rest of the box's text */
-
-/* art pieces: just the image (no frame), with the ↗ beside it at the top */
-.node--art {
-  display: flex;
-  align-items: flex-start;
-  gap: 4px;
-  padding: 0;
-  border: 0;
-  background: none;
-}
-.node--art img {
-  display: block;
-  width: var(--iw);
-  height: var(--ih);
-  object-fit: cover;
-  pointer-events: none;
-}
-/* the little ↗ that opens the piece on Instagram */
-.node__out {
-  display: grid;
-  place-items: center;
-  flex: none;
-  width: 20px;
-  height: 20px;
-  margin: -3px -2px -3px 0;
-  color: var(--ink);
-}
-.node__out:hover { background: var(--ink); color: var(--card); }
-
-/* the lines between a main box and its small boxes (drawn underneath all boxes) */
+/* Lines between a main box and its small boxes (under every box). */
 .wires {
   position: absolute;
   top: 0;
@@ -379,110 +148,158 @@ body.is-grabbing, body.is-grabbing * { cursor: grabbing !important; }
   z-index: 1;
   overflow: visible;
   pointer-events: none;
+  transition: opacity .6s ease .3s;
 }
-.wires path {
-  fill: none;
-  stroke: color-mix(in srgb, var(--ink) 38%, transparent);
-  stroke-width: 1;
+.wires path { fill: none; stroke: var(--wire); stroke-width: 1; }
+.desk:not(.is-ready) .wires,
+.desk.is-unfolding .wires { opacity: 0; transition: none; }
+
+/* =========================================================================
+   Main boxes
+   ========================================================================= */
+.card {
+  width: var(--w, 300px);
+  max-width: calc(100vw - 32px);
+  background: var(--card);
+  border: .5px solid var(--edge);
 }
-.desk:not(.is-ready) .wires { opacity: 0; }
-.wires { transition: opacity .6s ease .3s; }
+.card--about    { --w: 460px; }
+.card--work     { --w: 290px; }
+.card--projects { --w: 330px; }
+.card--writing  { --w: 310px; }
+.card--art      { --w: 380px; }
 
-/* ---------- corners: NYC time + weather (left), drag hint (right) ---------- */
-.corner { display: none; }
+/* clickable when it has tucked boxes to open (set by js/layout.js) */
+.card[role="button"] { cursor: pointer; }
 
-body.is-live .corner {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  position: fixed;
-  bottom: 16px;
-  z-index: 1000000;
+.card__bar {
+  padding: 5px 10px;
+  border-bottom: .5px solid var(--edge);
+  user-select: none;
+}
+.card__bar h2 {
   margin: 0;
   font-size: 11px;
-  color: var(--muted);
+  font-weight: 400;
+  letter-spacing: .06em;
 }
-.corner--left { left: 16px; }
-.corner--right { right: 16px; }
+.card__body { padding: 12px 14px 14px; }
 
-.local {
-  padding: 1px 6px;
-  margin-left: -6px;
-  background: color-mix(in srgb, var(--bg) 88%, transparent);
-  -webkit-backdrop-filter: blur(4px);
-  backdrop-filter: blur(4px);
-  white-space: nowrap;
+.card--about .card__body { padding: 20px 22px 22px; font-size: 15px; }
+.name {
+  margin: 0 0 12px;
+  font-size: 44px;
+  line-height: 1.05;
+  font-weight: 700;
+  letter-spacing: -.03em;
 }
-.local:empty { display: none; }
+.big { margin-bottom: 6px; font-size: 16px; font-weight: 700; }
 
-.hint {
+/* =========================================================================
+   Small boxes (.node): links and examples for each category
+   ========================================================================= */
+.node {
+  position: relative;
+  display: block;
+  width: max-content;
+  max-width: min(260px, 85vw);
   margin: 0;
-  padding: 1px 6px;
-  margin-right: -6px;
-  background: color-mix(in srgb, var(--bg) 88%, transparent);
-  -webkit-backdrop-filter: blur(4px);
-  backdrop-filter: blur(4px);
-  pointer-events: none;
-  transition: opacity .4s ease;
+  padding: 6px 10px;
+  color: var(--ink);
+  background: var(--card);
+  border: .5px solid var(--edge);
+  font-size: 12px;
+  line-height: 1.5;
+  text-decoration: none;
 }
-.hint.is-gone { opacity: 0; }
+.node[hidden] { display: none; }
 
-/* phones: the hint sits one line up so it never collides with the time/weather */
-@media (max-width: 640px) {
-  body.is-live .corner--right { bottom: 40px; }
-}
-.hint--touch { display: none; }
-@media (hover: none) {
-  .hint--mouse { display: none; }
-  .hint--touch { display: inline; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .desk.is-live .card,
-  .desk.is-live .node { transition: none; }
-}
-
-/* ---------- listening now (a small box off the about card) ---------- */
-.listening { width: 240px; padding: 8px 10px; }
-.listening[hidden] { display: none; }
-.listening__label {
+/* small grey labels: "currently", "last played", "currently reading" */
+.node__label {
   display: flex;
   align-items: center;
   gap: 6px;
   margin: 0 0 6px;
+  font-size: 11px;
+  letter-spacing: .02em;
+  color: var(--muted);
 }
-.listening__track {
+span.node__label { margin: 0; }
+
+/* Anything that links out gets the same small ↗ in its top-right corner. */
+.node--link,
+.node--live { padding-right: 24px; }
+.node--link::after,
+.node--live::after {
+  content: "";
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 10px;
+  height: 10px;
+  background: currentColor;
+  mask: var(--out-icon) center / contain no-repeat;
+}
+.node--link.is-copied::after { content: none; }
+.node--link:not(.node--entry):hover { background: var(--ink); color: var(--card); }
+
+/* a project or piece of writing: bold title + one sentence */
+.node--entry { width: 250px; padding-block: 8px; }
+.entry__title { display: inline-block; margin-left: -2px; padding: 0 2px; font-weight: 700; }
+.entry__desc { display: block; margin-top: 4px; }
+.node--entry:hover .entry__title { background: var(--ink); color: var(--card); }
+
+/* art: just the image (no frame) with the ↗ beside it */
+.node--art {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 0;
+  border-color: transparent;
+  background: none;
+}
+.node--art img { display: block; object-fit: cover; }
+.node__out {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin-top: -3px;
+}
+.node__out::before {
+  content: "";
+  width: 12px;
+  height: 12px;
+  background: currentColor;
+  mask: var(--out-icon) center / contain no-repeat;
+}
+.node__out:hover { background: var(--ink); color: var(--card); }
+
+/* last played / currently reading: cover + title + subtitle rows */
+.node--live { width: 240px; padding-block: 8px; }
+.media-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.media {
   display: grid;
   grid-template-columns: 40px 1fr;
+  align-items: start;
   gap: 10px;
-  align-items: center;
   text-decoration: none;
 }
-.listening__track:hover .listening__title {
-  background: var(--ink);
-  color: var(--card);
-}
-.listening__cover {
+.media__cover {
   width: 40px;
   height: 40px;
-  border: 1px solid var(--soft);
   object-fit: cover;
-  background: repeating-linear-gradient(45deg, var(--rule) 0 1px, transparent 1px 6px);
+  border: .5px solid var(--edge);
 }
-.listening__text { min-width: 0; }
-.listening__title,
-.listening__artist {
-  display: block;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-.listening__title { font-weight: 700; }
-.listening__artist { display: block; }
+.media__text { min-width: 0; }
+.media__title { display: block; font-weight: 700; }
+.media__subtitle { display: block; }
+.media:hover .media__title { background: var(--ink); color: var(--card); }
 
-/* tiny equalizer, only while something is playing */
+/* tiny equalizer while a song is actually playing */
 .eq { display: none; align-items: flex-end; gap: 1px; height: 9px; }
-.listening.is-live .eq { display: inline-flex; }
+.is-playing .eq { display: inline-flex; }
 .eq i {
   width: 2px;
   height: 100%;
@@ -492,15 +309,9 @@ body.is-live .corner {
 }
 .eq i:nth-child(2) { animation-delay: -.3s; }
 .eq i:nth-child(3) { animation-delay: -.6s; }
-@keyframes eq {
-  0%, 100% { transform: scaleY(.3); }
-  50% { transform: scaleY(1); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .eq i { animation: none; transform: scaleY(.6); }
-}
+@keyframes eq { 50% { transform: scaleY(1); } 0%, 100% { transform: scaleY(.3); } }
 
-/* ---------- bass clef floating by the Bass Transcriber box (not clickable yet) ---------- */
+/* bass clef floating by Bass Transcriber (decorative for now) */
 .clef {
   position: absolute;
   top: -22px;
@@ -511,45 +322,66 @@ body.is-live .corner {
   pointer-events: none;
   animation: clef-drift 4.5s ease-in-out infinite;
 }
-.clef svg { width: 100%; height: 100%; display: block; }
+.clef svg { display: block; width: 100%; height: 100%; }
 @keyframes clef-drift {
   0%, 100% { transform: translate(0, 0) rotate(-6deg); }
   50% { transform: translate(-3px, -5px) rotate(5deg); }
 }
-@media (prefers-reduced-motion: reduce) { .clef { animation: none; } }
 
-/* ---------- folding (desktop): small boxes tucked behind their main box ---------- */
-.node.is-folded { pointer-events: none; }
-.node.is-folded .clef { visibility: hidden; }
-.desk.is-unfolding .node { transition: left .45s cubic-bezier(.2, .8, .2, 1), top .45s cubic-bezier(.2, .8, .2, 1), transform .45s ease, opacity .35s ease; }
-.desk.is-unfolding .wires { opacity: 0; transition: none; }
-.card[role="button"] { cursor: pointer; }
-.card[role="button"] .card__body { cursor: pointer; }
-/* tucked boxes show only their edges peeking out, not their contents */
+/* =========================================================================
+   Folding (desktop): small boxes tucked behind their main box until it's
+   clicked; outlined, slightly tilted, only their edges showing
+   ========================================================================= */
+.node.is-folded {
+  color: transparent;
+  background: var(--card);
+  border-color: var(--edge);
+  transform: rotate(var(--tilt, 0deg));
+  pointer-events: none;
+}
 .node.is-folded > *,
 .node.is-folded::after { visibility: hidden; }
-.node--art.is-folded { background: var(--card); }
-.node.is-folded { transition: transform .2s ease, opacity .35s ease; }
-.node.is-folded.is-peeking { transform: translate(var(--peek-x, 0), var(--peek-y, 0)) rotate(var(--tilt-out, 0deg)); }
-/* tucked boxes: outlined cards, slightly tilted, peeking out from behind (like the sketch) */
-.node.is-folded {
-  border: 0.5px solid var(--edge);
-  background: var(--card);
-  transform: rotate(var(--tilt, 0deg));
+.node.is-folded.is-peeking {
+  transform: translate(var(--peek-x, 0), var(--peek-y, 0)) rotate(var(--tilt-out, 0deg));
 }
-.node.is-folded { color: transparent; } /* hide bare text inside tucked boxes too */
-/* currently reading: one row per book */
-.reading__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-.node--art:not(.is-folded) { border-color: transparent; } /* art stays frameless when open */
-/* currently reading: show full titles (wrap instead of "…") */
-.reading .listening__title,
-.reading .listening__artist { white-space: normal; overflow: visible; text-overflow: clip; }
-.reading .listening__track { align-items: start; }
-/* no dragging anymore: normal cursors and normal touch scrolling everywhere */
-.desk.is-live .card__bar,
-.desk.is-live .card__body,
-.desk.is-live .node { cursor: auto; touch-action: auto; }
-.desk.is-live .card[role="button"],
-.desk.is-live .card[role="button"] * { cursor: pointer; }
-.desk.is-live .node a { cursor: pointer; }
-.desk.is-live a.node { cursor: pointer; }
+.desk.is-unfolding .node {
+  transition: left .45s var(--ease-out), top .45s var(--ease-out), transform .45s ease, opacity .35s ease;
+}
+
+/* =========================================================================
+   NYC time + weather, bottom-left
+   ========================================================================= */
+.local {
+  display: none;
+  position: fixed;
+  left: 10px;
+  bottom: 16px;
+  z-index: 1000000;
+  margin: 0;
+  padding: 1px 6px;
+  font-size: 11px;
+  white-space: nowrap;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(4px);
+}
+body.is-live .local:not(:empty) { display: block; }
+
+/* =========================================================================
+   Phones
+   ========================================================================= */
+@media (max-width: 640px) {
+  .card { max-width: 85vw; }
+  .name { font-size: 34px; }
+  .moon { width: 34px; }
+}
+
+/* =========================================================================
+   Less motion
+   ========================================================================= */
+@media (prefers-reduced-motion: reduce) {
+  .desk.is-live :is(.card, .node),
+  .desk.is-unfolding .node { transition: none; }
+  .stars i, .clef, .eq i { animation: none; }
+  .eq i { transform: scaleY(.6); }
+}

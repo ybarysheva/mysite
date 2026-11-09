@@ -3,30 +3,26 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- sets light/dark + the sky colors from the sun in New York, before anything paints -->
-  <script src="sky.js"></script>
   <title>Yana Barysheva</title>
   <meta name="description" content="Product designer. Also: art, writing, and small things I've built.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='4' y='4' width='24' height='24' fill='white' stroke='black' stroke-width='3'/%3E%3C/svg%3E">
+  <!-- sky.js runs before anything paints: light/dark + sky colors from the sun in New York -->
+  <script src="js/sky.js"></script>
+  <script type="module" src="js/main.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <div class="sky" aria-hidden="true"></div>
-  <!--
-    Each <article class="card"> is a main box; each .node is a small connected box.
-    Content order here = reading order for keyboard / screen readers.
-    Positions are shuffled fresh on every page load.
-  -->
-  <!-- On phones, .canvas is a full-screen scroll area bigger than the screen (swipe around it). -->
-  <div id="canvas" class="canvas">
-  <main id="desk" class="desk">
 
-    <!-- Each category is a cluster: a main .card with the info, plus small .node boxes
-         (links / examples) connected to it by straight lines. data-parent on a node = the
-         data-card of its main box. Dragging a main box brings its nodes along. -->
+  <!--
+    Each category is a cluster: a main box (.card, data-card="…") and small boxes
+    (.node, data-parent="…" = the main box's data-card) for its links and examples.
+    js/layout.js positions them and draws the lines. Source order = reading order.
+  -->
+  <main id="desk" class="desk">
 
     <!-- ABOUT -->
     <article class="card card--about" data-card="about">
@@ -36,21 +32,17 @@
         <p>A dilettante in a bunch of creative fields. I like to do a lot of different things, though it feels like mostly I just wash dishes.</p>
       </div>
     </article>
-    <!-- Address is stored reversed and assembled on hover/focus/click to keep scrapers off it -->
+    <!-- address stored reversed; assembled on hover/focus/click (js/widgets.js) -->
     <a class="node node--link js-email" data-parent="about" href="#" data-u="avehsyrab.y" data-d="moc.liamg">email</a>
-    <!-- "Listening now": filled in by script.js from /api/now-playing (Spotify). Hidden when Spotify doesn't answer. -->
-    <div class="node node--listening listening" data-parent="about" hidden>
-      <p class="listening__label"><span class="eq" aria-hidden="true"><i></i><i></i><i></i></span><span class="listening__status"></span></p>
-      <a class="listening__track" href="#" target="_blank" rel="noopener">
-        <img class="listening__cover" alt="" width="40" height="40">
-        <span class="listening__text"><span class="listening__title"></span><span class="listening__artist"></span></span>
-      </a>
+    <!-- filled from /api/now-playing (Spotify); stays hidden if there's nothing -->
+    <div class="node node--live js-listening" data-parent="about" hidden>
+      <p class="node__label"><span class="eq" aria-hidden="true"><i></i><i></i><i></i></span><span class="js-status"></span></p>
+      <div class="js-media"></div>
     </div>
-
-    <!-- "Currently reading": filled in by script.js from /api/reading (Goodreads). Hidden when the shelf is empty. -->
-    <div class="node node--listening reading" data-parent="about" hidden>
-      <p class="listening__label"><span>currently reading</span></p>
-      <ul class="reading__list"></ul>
+    <!-- filled from /api/reading (Goodreads currently-reading shelf); hidden if empty -->
+    <div class="node node--live js-reading" data-parent="about" hidden>
+      <p class="node__label">currently reading</p>
+      <ul class="media-list js-media"></ul>
     </div>
 
     <!-- WORK -->
@@ -61,79 +53,74 @@
         <p>15+ years of experience across tech companies of all sizes, with a special fondness for early-stage startups. Currently civic tech-minded.</p>
       </div>
     </article>
-    <div class="node node--info" data-parent="work"><span class="node__label">currently</span>UX Designer @ NYC Office of Technology &amp; Innovation</div>
+    <div class="node" data-parent="work"><span class="node__label">currently</span>UX Designer @ NYC Office of Technology &amp; Innovation</div>
     <a class="node node--link" data-parent="work" href="https://example.com/portfolio" target="_blank" rel="noopener">2025 portfolio</a>
     <a class="node node--link" data-parent="work" href="https://www.linkedin.com/" target="_blank" rel="noopener">linkedin</a>
 
-    <!-- SIDE PROJECTS (name TBD) -->
+    <!-- SIDE PROJECTS -->
     <article class="card card--projects" data-card="projects">
       <header class="card__bar"><h2>side projects</h2></header>
       <div class="card__body">
         <p>A few projects made with Claude Code.</p>
       </div>
     </article>
-    <a class="node node--project" data-parent="projects" href="https://example.com/send-cat" target="_blank" rel="noopener">
-      <span><span class="pname">Send-a-cat</span><span class="pdesc">Send someone a cat that says nice things.</span></span>
+    <a class="node node--link node--entry" data-parent="projects" href="https://example.com/send-cat" target="_blank" rel="noopener">
+      <span class="entry__title">Send-a-cat</span>
+      <span class="entry__desc">Send someone a cat that says nice things.</span>
     </a>
-    <a class="node node--project" data-parent="projects" href="https://example.com/supermarket" target="_blank" rel="noopener">
-      <span><span class="pname">Supermarket Layer for Amazon Prime</span><span class="pdesc">I struggle with ecommerce UX for food shopping, so I made an IRL-supermarket browser add-on.</span></span>
+    <a class="node node--link node--entry" data-parent="projects" href="https://example.com/supermarket" target="_blank" rel="noopener">
+      <span class="entry__title">Supermarket Layer for Amazon Prime</span>
+      <span class="entry__desc">I struggle with ecommerce UX for food shopping, so I made an IRL-supermarket browser add-on.</span>
     </a>
-    <a class="node node--project" data-parent="projects" href="https://example.com/bass" target="_blank" rel="noopener">
-      <!-- bass clef: will open "bass mode" later (see IDEAS.md); decorative for now -->
+    <a class="node node--link node--entry" data-parent="projects" href="https://example.com/bass" target="_blank" rel="noopener">
+      <!-- bass clef: will open "bass mode" later (IDEAS.md); decorative for now -->
       <span class="clef" aria-hidden="true"><svg viewBox="0 0 20 22"><path d="M3.5 6.5C4 2.8 8 1.4 11 2.4c3.4 1.2 4 5.6 2 9-2 3.4-5.6 6-10 8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="4.3" cy="6.8" r="2.2" fill="currentColor"/><circle cx="17.2" cy="4.6" r="1.3" fill="currentColor"/><circle cx="17.2" cy="9.4" r="1.3" fill="currentColor"/></svg></span>
-      <span><span class="pname">Bass Transcriber</span><span class="pdesc">For when you play something cool while jamming and immediately forget what you played.</span></span>
+      <span class="entry__title">Bass Transcriber</span>
+      <span class="entry__desc">For when you play something cool while jamming and immediately forget what you played.</span>
     </a>
 
-    <!-- WRITING: lined-paper card -->
+    <!-- WRITING -->
     <article class="card card--writing" data-card="writing">
       <header class="card__bar"><h2>writing</h2></header>
       <div class="card__body">
         <p>I majored in this, then didn't do it for a while, but I'm back. Posting microfiction on Substack. Also, I wrote a book with my mom. Working on short fiction, stay tuned.</p>
       </div>
     </article>
-    <a class="node node--piece" data-parent="writing" href="https://kurochkagifts.com/" target="_blank" rel="noopener">
-      <span><span class="pname">More Than Borsch</span><span class="pdesc">A cookbook &amp; cultural compendium I made with my mom: Russian and Ukrainian recipes, food history and food writing.</span></span>
+    <a class="node node--link node--entry" data-parent="writing" href="https://kurochkagifts.com/" target="_blank" rel="noopener">
+      <span class="entry__title">More Than Borsch</span>
+      <span class="entry__desc">A cookbook &amp; cultural compendium I made with my mom: Russian and Ukrainian recipes, food history and food writing.</span>
     </a>
     <a class="node node--link" data-parent="writing" href="https://substack.com/" target="_blank" rel="noopener">substack</a>
 
-    <!-- ART: each piece is just the image, with a small ↗ link beside it.
-         TODO: the ↗ links point to the Instagram profile for now; swap in each post's own link. -->
+    <!-- ART: each piece is just the image + a small ↗ out to Instagram
+         (TODO: each ↗ points to the profile for now; swap in each post's own link) -->
     <article class="card card--art" data-card="art">
       <header class="card__bar"><h2>art</h2></header>
       <div class="card__body">
         <p>Drawing and painting demented portraits, bright and whacky things, cats. Light social commentary.</p>
       </div>
     </article>
-    <figure class="node node--art" data-parent="art" style="--iw:112px;--ih:140px">
-      <img src="images/stool.jpg" alt="Oil painting: a woman sitting on a yellow stool among large green rubber-plant leaves" loading="lazy">
-      <a class="node__out" href="https://www.instagram.com/yana_b_art/" target="_blank" rel="noopener" aria-label="see it on Instagram"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M5 2H2v8h8V7M7 2h3v3M10 2 5.5 6.5" fill="none" stroke="currentColor" stroke-width="1.3"/></svg></a>
+    <figure class="node node--art" data-parent="art">
+      <img src="images/stool.jpg" width="112" height="140" loading="lazy" alt="Oil painting: a woman sitting on a yellow stool among large green rubber-plant leaves">
+      <a class="node__out" href="https://www.instagram.com/yana_b_art/" target="_blank" rel="noopener" aria-label="see it on Instagram"></a>
     </figure>
-    <figure class="node node--art" data-parent="art" style="--iw:152px;--ih:114px">
-      <img src="images/faces.jpg" alt="Sketchbook spread of dozens of colorful watercolor faces on black" loading="lazy">
-      <a class="node__out" href="https://www.instagram.com/yana_b_art/" target="_blank" rel="noopener" aria-label="see it on Instagram"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M5 2H2v8h8V7M7 2h3v3M10 2 5.5 6.5" fill="none" stroke="currentColor" stroke-width="1.3"/></svg></a>
+    <figure class="node node--art" data-parent="art">
+      <img src="images/faces.jpg" width="152" height="114" loading="lazy" alt="Sketchbook spread of dozens of colorful watercolor faces on black">
+      <a class="node__out" href="https://www.instagram.com/yana_b_art/" target="_blank" rel="noopener" aria-label="see it on Instagram"></a>
     </figure>
-    <figure class="node node--art" data-parent="art" style="--iw:112px;--ih:140px">
-      <img src="images/underwater.jpg" alt="Digital illustration: two figures dancing through a blue underwater garden" loading="lazy">
-      <a class="node__out" href="https://www.instagram.com/yana_b_art/" target="_blank" rel="noopener" aria-label="see it on Instagram"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M5 2H2v8h8V7M7 2h3v3M10 2 5.5 6.5" fill="none" stroke="currentColor" stroke-width="1.3"/></svg></a>
+    <figure class="node node--art" data-parent="art">
+      <img src="images/underwater.jpg" width="112" height="140" loading="lazy" alt="Digital illustration: two figures dancing through a blue underwater garden">
+      <a class="node__out" href="https://www.instagram.com/yana_b_art/" target="_blank" rel="noopener" aria-label="see it on Instagram"></a>
     </figure>
-    <figure class="node node--art" data-parent="art" style="--iw:105px;--ih:140px">
-      <img src="images/collage.jpg" alt="Collage: a seated figure holding a fish before an ornate frame, on a psychedelic background, captioned &quot;biology that borders on pure magic.&quot;" loading="lazy">
-      <a class="node__out" href="https://www.instagram.com/yana_b_art/" target="_blank" rel="noopener" aria-label="see it on Instagram"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M5 2H2v8h8V7M7 2h3v3M10 2 5.5 6.5" fill="none" stroke="currentColor" stroke-width="1.3"/></svg></a>
+    <figure class="node node--art" data-parent="art">
+      <img src="images/collage.jpg" width="105" height="140" loading="lazy" alt="Collage: a seated figure holding a fish before an ornate frame, on a psychedelic background, captioned &quot;biology that borders on pure magic.&quot;">
+      <a class="node__out" href="https://www.instagram.com/yana_b_art/" target="_blank" rel="noopener" aria-label="see it on Instagram"></a>
     </figure>
     <a class="node node--link" data-parent="art" href="https://www.instagram.com/yana_b_art/" target="_blank" rel="noopener">instagram</a>
 
   </main>
-  </div>
 
-  <!-- bottom-left: Yana's time + weather in New York (filled in by script.js) -->
-  <div class="corner corner--left">
-    <p class="local"></p>
-  </div>
-
-  <!-- bottom-right: drag hint -->
-  <div class="corner corner--right">
-  </div>
-
-  <script src="script.js" defer></script>
+  <!-- bottom-left: NYC time + weather (js/widgets.js) -->
+  <p class="local" aria-live="off"></p>
 </body>
 </html>

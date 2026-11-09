@@ -1,78 +1,61 @@
 # mysite
 
-Personal site: boxes for each category (about in the middle), with small connected boxes that open on click. Fixed layout, same on every visit.
+Yana's personal site. A box for each category (about in the middle; work + side projects on the
+left; writing + art on the right). Each box has small connected boxes for its links and examples;
+on desktop they're tucked behind the box until it's clicked. The background follows the real sky
+in New York. Plain HTML/CSS/JS, no build step. Planned-but-not-built ideas: [`IDEAS.md`](IDEAS.md).
 
-Plain HTML/CSS/JS, no build step.
-
-Ideas that are planned but not built yet live in [`IDEAS.md`](IDEAS.md).
-
-- `index.html`: all the content. Each `<article class="card">` is one box.
-- `styles.css`: look and feel. Colors and font are at the top.
-- `script.js`: random layout + dragging.
-
-## On phones
-Clusters start stacked down the first screen: each main box, then its small boxes just below
-it, then the next category (about first, the rest shuffled: `stack()` in `script.js`).
-The canvas is about two screens wide: swipe anywhere to look around. To move a box,
-press and hold it (~0.4s) until it lifts, or drag it by its top bar. Hold time and
-canvas size are `HOLD_MS` and `sizeDesk()` in `script.js`.
+## Files
+| | |
+|---|---|
+| `index.html` | All the content. |
+| `styles.css` | Look and feel (tokens at the top, then one section per part of the page). |
+| `js/sky.js` | Sky colors, light/dark, stars and the real moon (runs before the page paints). |
+| `js/main.js` | Starts everything. |
+| `js/layout.js` | Places the boxes, draws the lines, open/close on click. |
+| `js/geometry.js` | Small math helpers for the layout. |
+| `js/widgets.js` | Email copy, NYC time + weather, last played, currently reading. |
+| `api/now-playing.js` | Vercel function: Spotify last played / listening now. |
+| `api/reading.js` | Vercel function: Goodreads currently-reading shelf. |
+| `tests/` | `npm test` (no network needed). |
 
 ## Editing content
-Each category is a **cluster**: a main box (`<article class="card" data-card="work">`) with the
-info, plus small boxes (`class="node" data-parent="work"`) for its links and examples, joined to
-it by straight lines. Dragging a main box brings its small boxes along; small boxes can also be
-dragged on their own.
-- **Links:** swap the placeholder `href`s in `index.html` (`node--link` boxes).
-- **New link/example:** copy a `.node` and set `data-parent` to the main box's `data-card`.
-- **Art:** each piece is a `node--art` figure. Replace its `<span class="ph"></span>` with
-  `<img src="images/whatever.jpg" alt="description">`; `--iw` / `--ih` set its size.
-  The ↗ icon (`.node__out`) links each piece out; they point to the Instagram profile for now.
-- **Writing pieces:** `node--piece` boxes (title + one sentence), like More Than Borsch.
+Each category is a **cluster**: a main box (`<article class="card" data-card="work">`) plus small
+boxes (`class="node" data-parent="work"`).
+- **New link:** copy a `node node--link` and set `data-parent` to its main box's `data-card`.
+- **Project / writing piece (title + one sentence):** copy a `node node--link node--entry`.
+- **Art:** each piece is a `node node--art` figure with an `<img>` (its `width`/`height` set the size)
+  and a `.node__out` ↗ link (currently the Instagram profile; swap in each post's link).
+- **New category:** add an `<article class="card" data-card="…">` + its nodes; give it a width in
+  `styles.css` (`.card--… { --w: … }`) and a spot in `arrangeDesktop()` in `js/layout.js`.
 
-## "Listening now" (Spotify)
-The about card shows what you're playing on Spotify right now (or the last thing you played).
-It stays hidden until it's set up, and hides itself whenever Spotify doesn't answer.
-Needs Spotify **Premium** (Spotify's rule for developer apps since Feb 2026).
+## Layout (`js/layout.js`)
+Computed, but with a fixed random seed, so it's the same on every visit for a given screen size.
+Desktop tries a few arrangements and keeps one with nothing overlapping and every small box
+clearly nearest its own main box. Phones stack everything top to bottom, all open.
 
-**Status:** connected (Spotify app + `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`,
-`SPOTIFY_REFRESH_TOKEN` in Vercel).
+## Sky (`js/sky.js`)
+Works out where the sun and moon are over New York right now: pale blue midday, peach at sunrise
+and sunset, a dim blue hour at dusk and dawn, navy night with faint stars, and the moon in its real
+phase only while it's up. The site is light while the sun is up and dark at night. Clouds (from the
+weather lookup) grey the sky. Colors live in the `DAY` / `NIGHT` tables at the top.
 
-**If it ever needs redoing** (Premium lapses, access revoked, new Spotify app): restore the
-one-time setup page from git history (`git checkout 6e90606 -- api/spotify-setup.js`), deploy,
-open `https://<your-site>/api/spotify-setup`, log in → Agree, put the new token in Vercel as
-`SPOTIFY_REFRESH_TOKEN`, redeploy, then delete the setup page again. The Spotify app's Redirect
-URI must match that address exactly.
-
-Code: `api/now-playing.js` (what the widget calls).
-Tests: `npm test`.
-
-## Email
-The address is stored reversed in `index.html` (`data-u` / `data-d`) and only assembled
-when someone hovers or clicks, so it never appears as plain text in the page source.
-Clicking "email" copies the address (shows "copied ✓"); if the browser can't copy,
-it opens the mail app instead.
-
-## NY sky background (light by day, dark at night)
-`sky.js` works out where the sun is in New York right now and sets the colors to match:
-pale blue at midday, peach/pink near the bottom around sunrise and sunset, a dim blue "blue hour"
-at dusk and dawn, deep navy at night with a sparse field of faint stars. The real moon shows too:
-its actual phase, and only while it's actually up over New York, roughly where it is in the sky
-(east on the left, west on the right). The whole site is light while the sun is up and
-dark at night (it switches when the sun is ~4° below the horizon, cross-fading over a few seconds).
-Clouds from the weather lookup turn the sky grey and hide the stars (and dim the moon). It recalculates every minute, so the
-change is too slow to notice. No light/dark button: the sky decides.
-- Colors: the `DAY` / `NIGHT` tables at the top of `sky.js` (by sun height, morning vs evening).
-- Without JavaScript the site is simply dark.
-
-## Time + weather corner
-Bottom-left shows New York time and weather (°F), from Open-Meteo (free, no key).
-To change the place, edit `PLACE` in `script.js` (name, time zone, latitude/longitude).
+## Live bits (`js/widgets.js`)
+- **Email:** stored reversed in the HTML and only assembled on hover/click; clicking copies it.
+- **Time + weather:** New York, from Open-Meteo (no key). Change `PLACE` to move it.
+- **Last played** (Spotify, `api/now-playing.js`): needs `SPOTIFY_CLIENT_ID`,
+  `SPOTIFY_CLIENT_SECRET`, `SPOTIFY_REFRESH_TOKEN` in Vercel (Spotify Premium required). To redo the
+  token: `git checkout 6e90606 -- api/spotify-setup.js`, deploy, open `/api/spotify-setup`, copy the
+  token into Vercel, redeploy, delete the page again.
+- **Currently reading** (Goodreads, `api/reading.js`): reads her shelf (member 4844438);
+  `/api/reading?debug=1` shows what Goodreads returned.
+- Each hides itself if its service doesn't answer.
 
 ## Run locally
 ```bash
 python3 -m http.server 8000
 ```
-then open http://localhost:8000
+then open http://localhost:8000 (the `/api` boxes need Vercel, so they stay hidden locally).
 
 ## Deploy
-Import the repo in Vercel. No framework, no build command; it serves the files as-is.
+Vercel, no framework, no build command.

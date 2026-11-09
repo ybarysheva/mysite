@@ -12,7 +12,6 @@ const FEED = `<?xml version="1.0"?><rss><channel><title>Yana's bookshelf: curren
 let calls = [];
 globalThis.fetch = async (url) => {
   calls.push(String(url));
-  if (String(url).includes("/author/show/")) return { ok: true, text: async () => '<a href="/user/show/987654-yana">profile</a>' };
   if (String(url).includes("list_rss/4844438")) return { ok: true, text: async () => FEED };
   return { ok: false, status: 404, text: async () => "" };
 };
