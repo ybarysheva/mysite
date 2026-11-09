@@ -545,3 +545,11 @@ body.is-live .corner {
 .reading .listening__title,
 .reading .listening__artist { white-space: normal; overflow: visible; text-overflow: clip; }
 .reading .listening__track { align-items: start; }
+/* no dragging anymore: normal cursors and normal touch scrolling everywhere */
+.desk.is-live .card__bar,
+.desk.is-live .card__body,
+.desk.is-live .node { cursor: auto; touch-action: auto; }
+.desk.is-live .card[role="button"],
+.desk.is-live .card[role="button"] * { cursor: pointer; }
+.desk.is-live .node a { cursor: pointer; }
+.desk.is-live a.node { cursor: pointer; }

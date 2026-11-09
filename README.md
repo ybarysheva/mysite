@@ -1,6 +1,6 @@
 # mysite
 
-Personal site: draggable cards scattered on a page, shuffled fresh on every visit.
+Personal site: boxes for each category (about in the middle), with small connected boxes that open on click. Fixed layout, same on every visit.
 
 Plain HTML/CSS/JS, no build step.
 

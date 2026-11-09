@@ -21,12 +21,15 @@
   let z = 10;
 
   /* ---------- helpers ---------- */
-  const rand = (a, b) => a + Math.random() * (b - a);
+  // Seeded "randomness": the layout comes out the same on every visit (for a given screen size).
+  let seed = 1;
+  const rnd = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296);
+  const rand = (a, b) => a + rnd() * (b - a);
   const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), Math.max(lo, hi));
   const shuffled = (arr) => {
     const a = [...arr];
     for (let i = a.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
+      const j = Math.floor(rnd() * (i + 1));
       [a[i], a[j]] = [a[j], a[i]];
     }
     return a;
@@ -176,7 +179,7 @@
   const viewportWidth = () => document.documentElement.clientWidth;
   const isPhone = () => viewportWidth() < 640;
   function sizeDesk() {
-    desk.style.width = isPhone() ? Math.max(viewportWidth() * 2, 760) + "px" : "";
+    desk.style.width = ""; // the canvas is the screen width (nothing to drag around anymore)
   }
 
   const byName = (name) => cards.find((c) => c.dataset.card === name);
@@ -286,9 +289,9 @@
        Each main box lands near its spot; its small boxes branch outward, never back
        toward the middle. */
     const spots = new Map([[about, { sx: 0.5, sy: Math.min(0.42, (VH * 0.42) / H) }]]);
-    const pairs = shuffled([pairOf("work", "projects"), pairOf("writing", "art")]);
+    const pairs = [pairOf("work", "projects"), pairOf("writing", "art")]; // work side left, making side right
     pairs.forEach((pair, side) => {
-      shuffled(pair).forEach((card, row) => spots.set(card, { sx: side ? 0.83 : 0.17, sy: row ? 0.72 : 0.22 }));
+      pair.forEach((card, row) => spots.set(card, { sx: side ? 0.83 : 0.17, sy: row ? 0.72 : 0.22 }));
     });
     const mid = spots.get(about);
     const outward = (card) => {
@@ -378,11 +381,12 @@
   }
 
   function layout() {
+    seed = 20261109; // same layout every time
     sizeDesk();
     heading.clear();
     const about = byName("about");
     // about first; then work + side projects together and writing + art together (shuffled)
-    const order = [about, ...shuffled([pairOf("work", "projects"), pairOf("writing", "art")]).flatMap(shuffled)].filter(Boolean);
+    const order = [about, ...pairOf("work", "projects"), ...pairOf("writing", "art")].filter(Boolean);
     for (const c of cards) if (!order.includes(c)) order.push(c); // any other category
     if (isPhone()) {
       order.forEach((c) => heading.set(c, Math.PI / 2)); // phones: small boxes sit below their main box
@@ -402,7 +406,7 @@
       best.spots.forEach(([el, x, y]) => place(el, x, y));
     }
     // stacking: clusters in random order, about's on top; small boxes above their main box
-    shuffled(order.slice(1)).forEach(clusterToFront);
+    order.slice(1).forEach(clusterToFront);
     if (about) clusterToFront(about);
     nodes.forEach(remember);
     openNow.clear();
@@ -543,7 +547,7 @@
   }
 
   cards.forEach((card) => {
-    makeDraggable(card, { handle: ".card__bar", followers: () => kidsOf(card), onFront: () => clusterToFront(card), onTap: () => toggle(card) });
+    card.addEventListener("click", () => toggle(card)); // boxes don't move anymore; clicking opens them
     card.addEventListener("focusin", () => clusterToFront(card)); // keyboard users
     // hovering a closed main box nudges its tucked boxes out a bit, hinting there's more
     const peek = (on) => kidsOf(card).forEach((n) => n.classList.toggle("is-peeking", on));
@@ -557,7 +561,6 @@
     });
   });
   nodes.forEach((node) => {
-    makeDraggable(node, { onFront: () => clusterToFront(parentOf(node)), onDrop: () => remember(node) });
     node.addEventListener("focusin", () => clusterToFront(parentOf(node)));
   });
 
