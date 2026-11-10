@@ -1,107 +1,166 @@
-/* Bass mode: four strings drop down over the site and you can play them.
+/* Bass mode: a bass neck comes down over the site and you can play it.
    Loaded only when the bass clef is clicked (see js/main.js). Progress: BASS.md.
 
-   Step 1 (this file so far): the stage. Strings, frets, open/close. No sound yet. */
+   Modeled loosely on Yana's bass: a Fender Jazz Bass with flatwound strings (smooth, polished
+   strings; they fan out a little from the nut).
+
+   Step 1 (this file so far): the stage. Neck, strings, frets, open/close. No sound yet. */
 
 const NS = "http://www.w3.org/2000/svg";
+// top of the screen to bottom, like bass tab: G on top, low E at the bottom
 const STRINGS = [
-  { name: "E", width: 4 },
-  { name: "A", width: 3 },
-  { name: "D", width: 2.2 },
-  { name: "G", width: 1.5 },
+  { name: "G", width: 4 },
+  { name: "D", width: 5.5 },
+  { name: "A", width: 7 },
+  { name: "E", width: 9 },
 ];
 const FRETS = 12;
+const UPRIGHT_FRETS = 5;         // what fits on a phone held upright
 const DOTS = [3, 5, 7, 9, 12];   // fret markers (12 gets two)
-const HEADROOM = 76;             // space above the nut (string names; later: pluck open strings)
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-let stage = null;   // the open overlay, if any
-let opener = null;  // what to give focus back to on close
+let stage = null;        // the open overlay, if any
+let opener = null;       // what to give focus back to on close
+let playUpright = false; // "can't rotate? play upright" was chosen
 
-const el = (name, attrs = {}) => {
+const svgEl = (name, attrs = {}) => {
   const node = document.createElementNS(NS, name);
   for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
   return node;
 };
+const htmlEl = (name, props = {}) => Object.assign(document.createElement(name), props);
 
-/** Where things sit for a given screen size. Frets are spaced like a real neck:
-    each one a little closer than the last (12 frets = half the string length). */
-export function neckGeometry(width, height) {
-  const neckWidth = Math.min(420, width * 0.82);
-  const left = (width - neckWidth) / 2;
-  const gap = neckWidth / (STRINGS.length - 1);
-  const nutY = HEADROOM;
-  const neckLength = height - nutY - 56;
-  const fretY = (n) => nutY + (neckLength * (1 - 2 ** (-n / 12))) / 0.5;
-  return {
-    left,
-    right: left + neckWidth,
-    nutY,
-    stringX: STRINGS.map((_, i) => left + i * gap),
-    fretY: Array.from({ length: FRETS + 1 }, (_, n) => fretY(n)), // [0] is the nut
-  };
+const isUprightPhone = () => innerWidth < 640 && innerHeight > innerWidth;
+
+/** Where things sit for a given screen size.
+    - nutX: the nut; left of it is open-string territory.
+    - fretX[n]: fret n (0 = nut), spaced like a real neck (each a bit closer than the last).
+    - stringY(i, x): height of string i at x. Strings fan out from the nut, as on a Jazz Bass. */
+export function neckGeometry(width, height, frets = FRETS) {
+  const nutX = Math.max(56, width * 0.07);
+  const endX = width - 28;                                // the last fret sits here
+  const scale = (endX - nutX) / (1 - 2 ** (-frets / 12)); // so fret `frets` lands on endX
+  const fretX = Array.from({ length: frets + 1 }, (_, n) => nutX + scale * (1 - 2 ** (-n / 12)));
+
+  const spacingEnd = Math.min(height * 0.16, 70);         // between strings at the right edge
+  const spacingNut = spacingEnd * 0.7;                    // tighter at the nut
+  const centerY = height / 2;
+  const spacingAt = (x) => spacingNut + ((spacingEnd - spacingNut) * (x - nutX)) / (endX - nutX);
+  const stringY = (i, x) => centerY + (i - (STRINGS.length - 1) / 2) * spacingAt(x);
+
+  return { nutX, endX, fretX, stringY, centerY };
 }
 
-function draw(svg) {
+function gradient(id, attrs, stops) {
+  const g = svgEl("linearGradient", { id, ...attrs });
+  for (const [offset, color] of stops) g.append(svgEl("stop", { offset, "stop-color": color }));
+  return g;
+}
+
+function drawNeck(svg) {
   const { innerWidth: W, innerHeight: H } = window;
-  const g = neckGeometry(W, H);
+  const frets = isUprightPhone() ? UPRIGHT_FRETS : FRETS;
+  const g = neckGeometry(W, H, frets);
+  const last = STRINGS.length - 1;
   svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
   svg.replaceChildren();
 
-  // frets (the nut is the thick one at the top)
-  g.fretY.forEach((y, n) =>
-    svg.append(el("line", { class: n ? "bass__fret" : "bass__nut", x1: g.left - 14, x2: g.right + 14, y1: y, y2: y })));
+  const defs = svgEl("defs");
+  defs.append(
+    // fret wire: a silvery bar with a bright edge
+    gradient("bass-fret", {}, [[0, "#6c7076"], [0.4, "#f1f1ee"], [1, "#8f9398"]]),
+    gradient("bass-nut", {}, [[0, "#cfc7b0"], [0.45, "#f3eedf"], [1, "#b9b19a"]]),
+    // (a level line has no height of its own, so the blur's area is given in screen units)
+    Object.assign(svgEl("filter", { id: "bass-soft", filterUnits: "userSpaceOnUse", x: -100, y: -100, width: W + 200, height: H + 200 }), {
+      innerHTML: '<feGaussianBlur stdDeviation="2"/>',
+    }),
+  );
+  svg.append(defs);
 
-  // fret markers, halfway between the frets
-  const midX = (g.left + g.right) / 2;
-  for (const n of DOTS) {
-    const y = (g.fretY[n - 1] + g.fretY[n]) / 2;
-    const xs = n === 12 ? [(g.stringX[0] + g.stringX[1]) / 2, (g.stringX[2] + g.stringX[3]) / 2] : [midX];
-    xs.forEach((x) => svg.append(el("circle", { class: "bass__dot", cx: x, cy: y, r: 4 })));
+  // frets and nut: bars a little taller than the strings' span at that point
+  const bar = (x, w, cls) =>
+    svgEl("rect", { class: cls, x: x - w / 2, y: g.stringY(0, x) - 16, width: w, height: g.stringY(last, x) - g.stringY(0, x) + 32, rx: w / 2 });
+  g.fretX.forEach((x, n) => svg.append(n ? bar(x, 4, "bass__fret") : bar(x, 9, "bass__nut")));
+
+  // pearl dots between the frets (two at the 12th)
+  for (const n of DOTS.filter((d) => d <= frets)) {
+    const x = (g.fretX[n - 1] + g.fretX[n]) / 2;
+    const ys = n === 12 ? [(g.stringY(0, x) + g.stringY(1, x)) / 2, (g.stringY(2, x) + g.stringY(3, x)) / 2] : [g.centerY];
+    ys.forEach((y) => svg.append(svgEl("circle", { class: "bass__dot", cx: x, cy: y, r: 5.5 })));
   }
 
-  // strings: from the very top of the screen to the bottom, thickest first
+  // strings: smooth, polished flatwounds. Each is drawn level and then tilted into its fan angle,
+  // so the top-to-bottom metal shading always runs across the string.
   STRINGS.forEach((s, i) => {
-    const x = g.stringX[i];
-    svg.append(el("path", {
-      class: "bass__string",
-      d: `M ${x} 0 L ${x} ${H}`,
-      pathLength: 1,
-      "stroke-width": s.width,
-      style: `--i: ${i}`,
-      "data-string": s.name,
-    }));
-    const label = el("text", { class: "bass__name", x, y: g.nutY - 22, "text-anchor": "middle", style: `--i: ${i}` });
+    const y = g.stringY(i, g.nutX);
+    const angle = (Math.atan2(g.stringY(i, g.endX) - y, g.endX - g.nutX) * 180) / Math.PI;
+    const d = `M -60 ${y} L ${W + 60} ${y}`;
+    defs.append(
+      gradient(`bass-metal-${i}`, { gradientUnits: "userSpaceOnUse", x1: 0, x2: 0, y1: y - s.width / 2, y2: y + s.width / 2 }, [
+        [0, "#fbfbf9"], [0.22, "#d3d6d8"], [0.6, "#8b8f94"], [1, "#43464b"],
+      ]),
+    );
+
+    const outer = svgEl("g", { class: "bass__string", style: `--i: ${last - i}`, "data-string": s.name }); // E lands first
+    const tilted = svgEl("g", { transform: `rotate(${angle.toFixed(3)} ${g.nutX} ${y})` });
+    tilted.append(
+      svgEl("path", { class: "bass__shadow", d: `M -60 ${y + s.width * 0.9} L ${W + 60} ${y + s.width * 0.9}`, "stroke-width": s.width, filter: "url(#bass-soft)" }),
+      svgEl("path", { class: "bass__metal", d, "stroke-width": s.width, stroke: `url(#bass-metal-${i})` }),
+    );
+    outer.append(tilted);
+    svg.append(outer);
+
+    const label = svgEl("text", { class: "bass__name", x: g.nutX - 24, y: g.stringY(i, g.nutX - 24) - s.width / 2 - 6, "text-anchor": "middle" });
     label.textContent = s.name;
     svg.append(label);
   });
 }
 
+/** Neck, or (on a phone held upright) a note asking to turn it sideways. */
+function render() {
+  if (!stage) return;
+  const askToTurn = isUprightPhone() && !playUpright;
+  stage.classList.toggle("is-turn", askToTurn);
+  if (!askToTurn) drawNeck(stage.querySelector(".bass__neck"));
+}
+
 export function openBass(from) {
   if (stage) return;
   opener = from ?? document.activeElement;
+  playUpright = false;
 
-  stage = document.createElement("div");
-  stage.className = "bass";
+  stage = htmlEl("div", { className: "bass" });
   stage.setAttribute("role", "dialog");
   stage.setAttribute("aria-modal", "true");
   stage.setAttribute("aria-label", "bass mode");
 
-  const svg = el("svg", { class: "bass__neck", "aria-hidden": "true" });
-  const close = Object.assign(document.createElement("button"), { type: "button", className: "bass__close", textContent: "×" });
+  const svg = svgEl("svg", { class: "bass__neck", "aria-hidden": "true" });
+
+  const close = htmlEl("button", { type: "button", className: "bass__close", textContent: "×" });
   close.setAttribute("aria-label", "close bass mode");
   close.addEventListener("click", closeBass);
-  stage.append(svg, close);
 
-  draw(svg);
-  stage.redraw = () => draw(svg);
-  addEventListener("resize", stage.redraw);
+  const turn = htmlEl("div", { className: "bass__turn" });
+  const anyway = htmlEl("button", { type: "button", className: "bass__anyway", textContent: "can't rotate? play upright" });
+  anyway.addEventListener("click", () => {
+    playUpright = true;
+    render();
+  });
+  turn.append(
+    htmlEl("span", { className: "bass__turn-icon", ariaHidden: "true" }),
+    htmlEl("p", { textContent: "turn your phone sideways to play" }),
+    anyway,
+  );
+
+  stage.append(svg, turn, close);
+  addEventListener("resize", render);
   addEventListener("keydown", onKey);
 
   // the site steps back while the bass is out
   document.getElementById("desk").inert = true;
   document.body.classList.add("is-bass");
   document.body.append(stage);
+  render();
   requestAnimationFrame(() => stage?.classList.add("is-open"));
   close.focus({ preventScroll: true });
 }
@@ -110,7 +169,7 @@ export function closeBass() {
   if (!stage) return;
   const closing = stage;
   stage = null;
-  removeEventListener("resize", closing.redraw);
+  removeEventListener("resize", render);
   removeEventListener("keydown", onKey);
 
   const finish = () => {
@@ -119,9 +178,9 @@ export function closeBass() {
     opener?.focus?.({ preventScroll: true });
   };
   document.body.classList.remove("is-bass");
-  closing.classList.remove("is-open"); // strings pull back up
+  closing.classList.remove("is-open"); // strings slide back up
   if (reduceMotion) finish();
-  else setTimeout(finish, 450);
+  else setTimeout(finish, 500);
 }
 
 function onKey(e) {
