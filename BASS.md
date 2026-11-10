@@ -14,15 +14,16 @@ Design: `IDEAS.md` #1. Code: `js/bass.js`, `bass.css`, small hooks in `index.htm
 - [ ] **5. Polish + go live.** Reduced motion, labels, contrast, tidy, docs, merge.
 
 ## The bass it's modeled on
-Yana plays a **Fender Jazz Bass with flatwound strings**. Aim for that:
-- **Look:** smooth polished strings (no winding ridges), strings fan out slightly from the nut,
+Yana plays an electric **Fender Jazz Bass with flatwound strings**. Aim for that:
+- **Look:** smooth polished strings (no winding ridges), parallel and evenly spaced,
   silvery frets, ivory nut, pearl dots. No wooden board (she chose strings floating over the sky).
 - **Sound (step 2):** warm and thumpy, rolled-off highs, short sustain. Not bright or zingy.
 
 ## Notes for later steps
 - Strings are horizontal: G on top, low E at the bottom (like tab). Nut on the left.
-- `neckGeometry(width, height, frets)` in `js/bass.js` gives `nutX`, `fretX[n]` and `stringY(i, x)`;
+- `neckGeometry(width, height, frets)` in `js/bass.js` gives `nutX`, `fretX[n]` and `stringY(i)`;
   use it to turn a tap into (string, fret). Left of the nut = open string.
 - Each string is a `<g class="bass__string" data-string="E">` holding its shadow + metal paths
   (paths, so step 3 can bend them).
-- Phone held upright: a "turn your phone sideways" note, with a "play upright" fallback (5 frets).
+- Phone held vertically: a "turn your phone sideways" note, with a "play it this way" fallback
+  (5 frets). Avoid the word "upright" for this: it reads as "upright bass".

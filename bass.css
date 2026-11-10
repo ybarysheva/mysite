@@ -73,7 +73,7 @@ body.is-bass .desk { opacity: .1; }
 }
 .bass__close:hover { background: var(--ink); color: var(--card); }
 
-/* phone held upright: ask to turn it sideways */
+/* phone held vertically: ask to turn it sideways */
 .bass__turn { display: none; }
 .bass.is-turn .bass__neck { display: none; }
 .bass.is-turn .bass__turn {
