@@ -46,16 +46,18 @@ body.is-bass .desk { opacity: .1; }
 .bass__metal { fill: none; stroke-linecap: round; }             /* polished flatwound */
 .bass__shadow { fill: none; stroke: rgb(0 0 0 / .32); }
 
+.bass__board { fill: color-mix(in srgb, var(--ink) 5%, transparent); stroke: var(--edge); stroke-width: 1; }
 .bass__fret { fill: url(#bass-fret); }
 .bass__nut { fill: url(#bass-nut); }
 .bass__dot { fill: #e9e5d8; opacity: .85; }
 .bass__name { fill: var(--muted); font: 11px var(--font); }
 
+.bass__board,
 .bass__fret,
 .bass__nut,
 .bass__dot,
 .bass__name { opacity: 0; transition: opacity .35s ease; }
-.bass.is-open :is(.bass__fret, .bass__nut, .bass__name) { opacity: 1; transition-delay: .4s; }
+.bass.is-open :is(.bass__board, .bass__fret, .bass__nut, .bass__name) { opacity: 1; transition-delay: .4s; }
 .bass.is-open .bass__dot { opacity: .85; transition-delay: .4s; }
 
 .bass__close {
@@ -110,7 +112,7 @@ body.is-bass .desk { opacity: .1; }
 
 @media (prefers-reduced-motion: reduce) {
   .bass__string,
-  .bass :is(.bass__fret, .bass__nut, .bass__dot, .bass__name),
+  .bass :is(.bass__board, .bass__fret, .bass__nut, .bass__dot, .bass__name),
   .desk { transition: none; }
   .bass__turn-icon { animation: none; }
   button.clef:is(:hover, :focus-visible) { animation: none; }

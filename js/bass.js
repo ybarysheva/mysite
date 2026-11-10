@@ -77,6 +77,9 @@ function drawNeck(svg) {
 
   // frets and nut: bars a little taller than the strings' span
   const top = g.stringY(0) - 16;
+
+  // a light outline of the fretboard, from the nut off the right edge of the screen
+  svg.append(svgEl("rect", { class: "bass__board", x: g.nutX, y: top, width: W - g.nutX + 20, height: g.stringY(last) - top + 16 }));
   const bar = (x, w, cls) =>
     svgEl("rect", { class: cls, x: x - w / 2, y: top, width: w, height: g.stringY(last) - top + 16, rx: w / 2 });
   g.fretX.forEach((x, n) => svg.append(n ? bar(x, 4, "bass__fret") : bar(x, 9, "bass__nut")));
