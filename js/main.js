@@ -7,6 +7,12 @@ import { initEmail, initLocal, loadListening, loadReading } from "./widgets.js";
 initEmail();
 initLocal();
 
+// Bass mode: its code is only fetched when someone clicks the clef.
+document.querySelector(".js-bass")?.addEventListener("click", async (e) => {
+  const { openBass } = await import("./bass.js");
+  openBass(e.currentTarget);
+});
+
 // Wait for the font (box sizes depend on it) and briefly for Spotify/Goodreads, so those boxes
 // can be part of the first layout; anything slower finds its spot when it arrives.
 const live = Promise.all([loadListening(reveal), loadReading(reveal)]);

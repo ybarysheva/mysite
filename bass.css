@@ -1,0 +1,81 @@
+/* Bass mode (js/bass.js). Kept in its own file while it's being built on the bass-mode branch. */
+
+/* ---------- the way in: the bass clef by Bass Transcriber is a button ---------- */
+.entry__link { display: block; color: inherit; text-decoration: none; }
+.entry__link::before { content: ""; position: absolute; inset: 0; } /* the whole box still opens the link */
+
+button.clef {
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  pointer-events: auto;
+  z-index: 1;
+}
+button.clef::before { content: ""; position: absolute; inset: -10px; } /* easier to tap */
+button.clef:is(:hover, :focus-visible) { animation: clef-wiggle .5s ease-in-out infinite; }
+@keyframes clef-wiggle {
+  0%, 100% { transform: rotate(-12deg) scale(1.15); }
+  50% { transform: rotate(12deg) scale(1.15); }
+}
+
+/* ---------- the site steps back ---------- */
+body.is-bass { overflow: hidden; }
+.desk { transition: opacity .4s ease; }
+body.is-bass .desk { opacity: .1; }
+
+/* ---------- the stage ---------- */
+.bass {
+  position: fixed;
+  inset: 0;
+  z-index: 2000000;
+  touch-action: none;       /* swipes will play, not scroll */
+  user-select: none;
+  -webkit-user-select: none;
+}
+.bass__neck { display: block; width: 100%; height: 100%; }
+
+/* strings drop in from the top, thickest first; they pull back up on close */
+.bass__string {
+  fill: none;
+  stroke: var(--ink);
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  transition: stroke-dashoffset .5s cubic-bezier(.3, .7, .2, 1) calc(var(--i) * 70ms);
+}
+.bass.is-open .bass__string { stroke-dashoffset: 0; }
+.bass:not(.is-open) .bass__string { transition-duration: .3s; transition-delay: 0s; }
+
+.bass__fret,
+.bass__nut,
+.bass__dot,
+.bass__name { opacity: 0; transition: opacity .35s ease; }
+.bass.is-open :is(.bass__fret, .bass__nut, .bass__dot, .bass__name) { opacity: 1; transition-delay: .35s; }
+
+.bass__fret { stroke: var(--wire); stroke-width: 1; }
+.bass__nut { stroke: var(--ink); stroke-width: 3; }
+.bass__dot { fill: var(--wire); }
+.bass__name { fill: var(--muted); font: 11px var(--font); }
+
+.bass__close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  font: 20px/1 var(--font);
+  color: var(--ink);
+  background: var(--card);
+  border: .5px solid var(--edge);
+  cursor: pointer;
+}
+.bass__close:hover { background: var(--ink); color: var(--card); }
+
+@media (prefers-reduced-motion: reduce) {
+  .bass__string,
+  .bass :is(.bass__fret, .bass__nut, .bass__dot, .bass__name),
+  .desk { transition: none; }
+  button.clef:is(:hover, :focus-visible) { animation: none; }
+}

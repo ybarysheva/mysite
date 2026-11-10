@@ -13,6 +13,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap">
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="bass.css">
 </head>
 <body>
   <div class="sky" aria-hidden="true"></div>
@@ -72,12 +73,14 @@
       <span class="entry__title">Supermarket Layer for Amazon Prime</span>
       <span class="entry__desc">I struggle with ecommerce UX for food shopping, so I made an IRL-supermarket browser add-on.</span>
     </a>
-    <a class="node node--link node--entry" data-parent="projects" href="https://example.com/bass" target="_blank" rel="noopener">
-      <!-- bass clef: will open "bass mode" later (IDEAS.md); decorative for now -->
-      <span class="clef" aria-hidden="true"><svg viewBox="0 0 20 22"><path d="M3.5 6.5C4 2.8 8 1.4 11 2.4c3.4 1.2 4 5.6 2 9-2 3.4-5.6 6-10 8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="4.3" cy="6.8" r="2.2" fill="currentColor"/><circle cx="17.2" cy="4.6" r="1.3" fill="currentColor"/><circle cx="17.2" cy="9.4" r="1.3" fill="currentColor"/></svg></span>
-      <span class="entry__title">Bass Transcriber</span>
-      <span class="entry__desc">For when you play something cool while jamming and immediately forget what you played.</span>
-    </a>
+    <div class="node node--link node--entry" data-parent="projects">
+      <!-- the bass clef opens bass mode (js/bass.js) -->
+      <button type="button" class="clef js-bass" aria-label="play the bass"><svg viewBox="0 0 20 22"><path d="M3.5 6.5C4 2.8 8 1.4 11 2.4c3.4 1.2 4 5.6 2 9-2 3.4-5.6 6-10 8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="4.3" cy="6.8" r="2.2" fill="currentColor"/><circle cx="17.2" cy="4.6" r="1.3" fill="currentColor"/><circle cx="17.2" cy="9.4" r="1.3" fill="currentColor"/></svg></button>
+      <a class="entry__link" href="https://example.com/bass" target="_blank" rel="noopener">
+        <span class="entry__title">Bass Transcriber</span>
+        <span class="entry__desc">For when you play something cool while jamming and immediately forget what you played.</span>
+      </a>
+    </div>
 
     <!-- WRITING -->
     <article class="card card--writing" data-card="writing">
